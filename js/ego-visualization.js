@@ -185,3 +185,89 @@ function updateTensorDisplay() {
         cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
     }
 }
+
+
+
+function createEgoConeVisualization() {
+    const state = window.appState;
+    if (!state.scene) return;
+
+    if (egoConeMesh) {
+        state.scene.remove(egoConeMesh);
+        egoConeMesh.geometry.dispose();
+        egoConeMesh.material.dispose();
+        egoConeMesh = null;
+    }
+
+    if (egoConeFadeTimeout) {
+        clearTimeout(egoConeFadeTimeout);
+        egoConeFadeTimeout = null;
+    }
+
+    const agentPos = egoAgentMarker ? egoAgentMarker.position.clone() : new THREE.Vector3(0, egoConfig.agentHeight, 0);
+    agentPos.y = egoConfig.agentHeight;
+    
+    const maxRange = egoConfig.maxRange;
+    const vMin = egoConfig.vAngleMin * Math.PI / 180;
+    const vMax = egoConfig.vAngleMax * Math.PI / 180;
+    const totalVAngle = vMax - vMin;
+    
+    // Create a cone geometry that represents the FOV
+    // The cone points along -Y by default in Three.js, apex at top
+    // We want the apex at the agent position, pointing forward (along -Z) but with vertical spread
+    const coneHeight = maxRange;
+    const coneRadius = maxRange * Math.tan(totalVAngle / 2);
+    const coneGeo = new THREE.ConeGeometry(coneRadius, coneHeight, 64, 1, true);
+    
+    const coneMat = new THREE.MeshBasicMaterial({
+        color: 0xffff00,
+        transparent: true,
+        opacity: 0.35,
+        side: THREE.DoubleSide,
+        depthWrite: false
+    });
+
+    egoConeMesh = new THREE.Mesh(coneGeo, coneMat);
+    
+    // The cone points up (Y+) by default. We need to:
+    // 1. Rotate it to point forward (-Z direction) 
+    // 2. Apply the vertical midpoint rotation
+    const midAngle = (vMin + vMax) / 2;
+    
+    // Rotate cone to point forward (-Z), then apply vertical tilt
+    egoConeMesh.rotation.x = -Math.PI / 2 + midAngle;
+    
+    // Position the cone so its apex is at the agent position
+    // The cone's origin is at its center, so we need to offset it by half height
+    egoConeMesh.position.copy(agentPos);
+    egoConeMesh.translateZ(-coneHeight / 2);
+
+    state.scene.add(egoConeMesh);
+    egoConeStartTime = Date.now();
+
+    animateConeFade();
+}
+
+function animateConeFade() {
+    if (!egoConeMesh) return;
+
+    const elapsed = Date.now() - egoConeStartTime;
+    const duration = 4000;
+    const progress = Math.min(elapsed / duration, 1);
+
+    egoConeMesh.material.opacity = 0.3 * (1 - progress);
+
+    if (progress < 1) {
+        requestAnimationFrame(animateConeFade);
+    } else {
+        const state = window.appState;
+        if (state.scene && egoConeMesh) {
+            state.scene.remove(egoConeMesh);
+            egoConeMesh.geometry.dispose();
+            egoConeMesh.material.dispose();
+            egoConeMesh = null;
+        }
+    }
+}
+
+window.createEgoConeVisualization = createEgoConeVisualization;

@@ -38,7 +38,9 @@ function updateEgoSensor() {
     const pointColors = egoPointCloud?.geometry.attributes.color.array;
 
     let minDist = egoConfig.maxRange;
+    let maxDist = 0;
     let hitCount = 0;
+    const distances = [];
 
     const targetObjects = [];
     if (state.cube && state.cube.visible) {
@@ -74,9 +76,48 @@ function updateEgoSensor() {
                 hit = true;
                 hitCount++;
                 minDist = Math.min(minDist, distance);
+                maxDist = Math.max(maxDist, distance);
             }
 
-            egoTensorData[idx] = distance / egoConfig.maxRange;
+            distances.push({ idx, distance, hit, hitPoint, rotatedDir });
+        }
+    }
+
+    // Apply scaling based on selected mode
+    const scalingMode = egoConfig.scalingMode || 'none';
+    let scaledDistances = [];
+    
+    // First pass: collect raw distances
+    for (let i = 0; i < distances.length; i++) {
+        scaledDistances.push(distances[i].distance);
+    }
+    
+    // Apply selected scaling method
+    if (scalingMode === 'normalize') {
+        // Normalize to 0-1 range based on maxRange
+        scaledDistances = scaledDistances.map(d => d / egoConfig.maxRange);
+    } else if (scalingMode === 'minmax' && maxDist > minDist) {
+        // Min-max normalization to use full 0-1 range
+        const range = maxDist - minDist;
+        scaledDistances = scaledDistances.map(d => (d - minDist) / range);
+    } else if (scalingMode === 'equalize') {
+        // Histogram equalization
+        const sorted = [...scaledDistances].sort((a, b) => a - b);
+        const total = sorted.length;
+        scaledDistances = scaledDistances.map(d => {
+            const rank = sorted.findIndex(x => x >= d);
+            return rank / (total - 1);
+        });
+    }
+    // 'none' mode keeps raw distances
+
+    for (let i = 0; i < distances.length; i++) {
+        const { idx, distance, hit, hitPoint, rotatedDir } = distances[i];
+        egoTensorData[idx] = scaledDistances[i];
+
+        const whiskers = egoRayHelper?.children;
+        const pointPositions = egoPointCloud?.geometry.attributes.position.array;
+        const pointColors = egoPointCloud?.geometry.attributes.color.array;
 
             if (whiskers && whiskers[idx]) {
                 const cylinder = whiskers[idx];
@@ -141,7 +182,6 @@ function updateEgoSensor() {
                 }
             }
         }
-    }
 
     if (egoPointCloud) {
         egoPointCloud.geometry.attributes.position.needsUpdate = true;
@@ -150,7 +190,7 @@ function updateEgoSensor() {
 
     updateEgoViewportCamera();
 
-    document.getElementById('detected-count').textContent = hitCount;
+    document.getElementById('detected-count').textContent = hitCount + ' / ' + (egoConfig.vBins * egoConfig.hBins);
     const minDistEl = document.getElementById('min-distance');
     if (minDistEl) {
         minDistEl.textContent = (minDist < egoConfig.maxRange ? minDist.toFixed(2) : '--') + 'm';

@@ -71,23 +71,47 @@
                 <h2>Ego Configuration</h2>
                 <div class="control-group">
                     <label class="control-label">H-BINS</label>
-                    <input type="range" id="ego-h-bins" min="8" max="64" value="64" step="4">
-                    <span class="range-value" id="ego-h-value">64</span>
+                    <input type="range" id="ego-h-bins" min="8" max="256" value="96" step="4">
+                    <span class="range-value" id="ego-h-value">96</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">V-BINS</label>
-                    <input type="range" id="ego-v-bins" min="4" max="32" value="32" step="2">
+                    <input type="range" id="ego-v-bins" min="4" max="128" value="32" step="2">
                     <span class="range-value" id="ego-v-value">32</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">RANGE (m)</label>
-                    <input type="range" id="ego-range" min="0.1" max="20" value="5" step="0.1">
-                    <span class="range-value" id="ego-range-value">5</span>
+                    <input type="range" id="ego-range" min="1" max="20" value="10" step="1">
+                    <span class="range-value" id="ego-range-value">10</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">BRIGHTNESS</label>
-                    <input type="range" id="ego-brightness" min="0.5" max="5" value="1.5" step="0.1">
-                    <span class="range-value" id="ego-brightness-value">1.5</span>
+                    <input type="range" id="ego-brightness" min="0.5" max="5" value="1" step="0.1">
+                    <span class="range-value" id="ego-brightness-value">1</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">LOOK UP ANGLE</label>
+                    <input type="range" id="ego-up-angle" min="-90" max="90" value="30" step="5">
+                    <span class="range-value" id="ego-up-angle-value">+30°</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">LOOK DOWN ANGLE</label>
+                    <input type="range" id="ego-down-angle" min="-90" max="90" value="-60" step="5">
+                    <span class="range-value" id="ego-down-angle-value">-60°</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">HORIZONTAL FOV</label>
+                    <input type="range" id="ego-h-fov" min="0" max="360" value="360" step="15">
+                    <span class="range-value" id="ego-h-fov-value">360°</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">DATA SCALING</label>
+                    <select id="ego-scaling-mode">
+                        <option value="none">None (raw)</option>
+                        <option value="normalize">Normalize (0-1)</option>
+                        <option value="equalize" selected>Histogram Equalization</option>
+                        <option value="minmax">Min-Max</option>
+                    </select>
                 </div>
                 <h2>Distance Tensor</h2>
                 <div class="ego-tensor-display" id="ego-tensor-display"></div>
@@ -106,8 +130,8 @@
                     <span class="stat-value" id="range-display">±2.0m</span>
                 </div>
                 <div class="stat-row">
-                    <span>Detected</span>
-                    <span class="stat-value" id="detected-count">0</span>
+                    <span>Hit Objects</span>
+                    <span class="stat-value" id="detected-count">0 / 0</span>
                 </div>
                 <div class="stat-row" id="stat-max-height">
                     <span>Max Height</span>

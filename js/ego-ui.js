@@ -4,6 +4,66 @@ function setupEgoUI() {
     const hSlider = document.getElementById('ego-h-bins');
     const vSlider = document.getElementById('ego-v-bins');
     const rangeSlider = document.getElementById('ego-range');
+    
+    // Initialize up angle slider
+    const upAngleSlider = document.getElementById('ego-up-angle');
+    if (upAngleSlider) {
+        upAngleSlider.value = egoConfig.vAngleMax;
+        document.getElementById('ego-up-angle-value').textContent = (egoConfig.vAngleMax >= 0 ? '+' : '') + egoConfig.vAngleMax + '°';
+        
+        upAngleSlider.addEventListener('input', (e) => {
+            egoConfig.vAngleMax = parseInt(e.target.value);
+            document.getElementById('ego-up-angle-value').textContent = (egoConfig.vAngleMax >= 0 ? '+' : '') + egoConfig.vAngleMax + '°';
+            
+            if (typeof createEgoConeVisualization === 'function') {
+                createEgoConeVisualization();
+            }
+        });
+    }
+    
+    // Initialize down angle slider
+    const downAngleSlider = document.getElementById('ego-down-angle');
+    if (downAngleSlider) {
+        downAngleSlider.value = egoConfig.vAngleMin;
+        document.getElementById('ego-down-angle-value').textContent = (egoConfig.vAngleMin >= 0 ? '+' : '') + egoConfig.vAngleMin + '°';
+        
+        downAngleSlider.addEventListener('input', (e) => {
+            egoConfig.vAngleMin = parseInt(e.target.value);
+            document.getElementById('ego-down-angle-value').textContent = (egoConfig.vAngleMin >= 0 ? '+' : '') + egoConfig.vAngleMin + '°';
+            
+            if (typeof createEgoConeVisualization === 'function') {
+                createEgoConeVisualization();
+            }
+        });
+    }
+    
+    // Initialize horizontal FOV slider
+    const hFovSlider = document.getElementById('ego-h-fov');
+    if (hFovSlider) {
+        const currentHFov = egoConfig.hAngleMax - egoConfig.hAngleMin;
+        hFovSlider.value = currentHFov;
+        document.getElementById('ego-h-fov-value').textContent = currentHFov + '°';
+        
+        hFovSlider.addEventListener('input', (e) => {
+            const hFov = parseInt(e.target.value);
+            egoConfig.hAngleMin = -hFov / 2;
+            egoConfig.hAngleMax = hFov / 2;
+            document.getElementById('ego-h-fov-value').textContent = hFov + '°';
+            
+            if (typeof createEgoConeVisualization === 'function') {
+                createEgoConeVisualization();
+            }
+        });
+    }
+    
+    // Initialize scaling mode dropdown
+    const scalingModeSelect = document.getElementById('ego-scaling-mode');
+    if (scalingModeSelect) {
+        scalingModeSelect.value = egoConfig.scalingMode || 'none';
+        scalingModeSelect.addEventListener('change', (e) => {
+            egoConfig.scalingMode = e.target.value;
+        });
+    }
 
     if (hSlider) {
         hSlider.addEventListener('input', (e) => {
@@ -23,7 +83,7 @@ function setupEgoUI() {
 
     if (rangeSlider) {
         rangeSlider.addEventListener('input', (e) => {
-            egoConfig.maxRange = parseFloat(e.target.value);
+            egoConfig.maxRange = parseInt(e.target.value);
             document.getElementById('ego-range-value').textContent = egoConfig.maxRange;
             document.getElementById('range-display').textContent = egoConfig.maxRange + 'm';
         });
@@ -80,6 +140,9 @@ function setActiveMode(mode) {
         if (egoPointCloud) egoPointCloud.visible = true;
         if (state.sensorPoints) state.sensorPoints.visible = false;
         if (state.heightBars) state.heightBars.visible = false;
+        
+        // Hide cone when switching to ego mode
+        if (egoConeMesh) egoConeMesh.visible = false;
     } else {
         if (gridConfig) gridConfig.style.display = 'flex';
         if (egoConfigEl) egoConfigEl.style.display = 'none';
@@ -96,6 +159,7 @@ function setActiveMode(mode) {
         if (egoAgentMarker) egoAgentMarker.visible = false;
         if (egoRayHelper) egoRayHelper.visible = false;
         if (egoPointCloud) egoPointCloud.visible = false;
+        if (egoConeMesh) egoConeMesh.visible = false;
         if (state.sensorPoints) state.sensorPoints.visible = true;
         if (state.heightBars) state.heightBars.visible = true;
     }
@@ -127,9 +191,10 @@ function resizeFloorForMode(mode) {
 
 function updateTensorShapeDisplay() {
     const el = document.getElementById('tensor-shape-display');
-    if (el) el.textContent = `${egoConfig.vBins} × ${egoConfig.hBins}`;
+    if (el) el.textContent = `${egoConfig.vBins} × ${egoConfig.hBins} = ${egoConfig.vBins * egoConfig.hBins}`;
 }
 
 window.setActiveMode = setActiveMode;
 window.resizeFloorForMode = resizeFloorForMode;
 window.updateTensorShapeDisplay = updateTensorShapeDisplay;
+window.setupEgoUI = setupEgoUI;

@@ -2,6 +2,8 @@
 
 Interactive 3D sensor visualization for reinforcement learning agents. View environment heightmaps and ego-centric perception tensors in real-time.
 
+*This project was auto-generated with Claude Opus 4.6 and Kimi K2.5*
+
 **Live Demo:** https://ildes.github.io/3d-perception-web/
 
 ## Features
@@ -64,5 +66,3 @@ npm install
 MIT
 
 ---
-
-*This project was auto-generated with Claude Opus 4.6 and Kimi K2.5*
