@@ -236,3 +236,120 @@ body {
 canvas {
     display: block;
 }
+
+/* Mode Toggle */
+.mode-toggle {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 10px;
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 6px 8px;
+    background: #21262d;
+    border: 1px solid #30363d;
+    color: #8b949e;
+    font-family: 'Courier New', monospace;
+    font-size: 9px;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.mode-btn:hover {
+    background: #30363d;
+    color: #c9d1d9;
+}
+
+.mode-btn.active {
+    background: #238636;
+    border-color: #2ea043;
+    color: #fff;
+}
+
+/* Ego Config */
+.ego-config {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+}
+
+.ego-config .control-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.ego-config .control-label {
+    flex: 0 0 100px;
+    margin-bottom: 0;
+}
+
+.ego-config input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: #30363d;
+    border-radius: 2px;
+    outline: none;
+}
+
+.ego-config input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 12px;
+    height: 12px;
+    background: #58a6ff;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.range-value {
+    flex: 0 0 24px;
+    text-align: right;
+    color: #f0883e;
+    font-size: 10px;
+}
+
+/* Ego Tensor Heatmap Display */
+.ego-tensor-display {
+    margin-top: 10px;
+    background: #0d1117;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 8px;
+    position: relative;
+}
+
+.ego-tensor-display canvas {
+    width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+}
+
+.tensor-label {
+    position: absolute;
+    font-size: 8px;
+    color: #8b949e;
+}
+
+.tensor-label.top { top: 2px; left: 50%; transform: translateX(-50%); }
+.tensor-label.bottom { bottom: 2px; left: 50%; transform: translateX(-50%); }
+.tensor-label.left { left: 2px; top: 50%; transform: translateY(-50%) rotate(-90deg); }
+.tensor-label.right { right: 2px; top: 50%; transform: translateY(-50%) rotate(90deg); }
+
+/* Agent marker in 3D view */
+.agent-marker {
+    position: absolute;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(13, 17, 23, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 9px;
+    border: 1px solid #f0883e;
+    color: #f0883e;
+}

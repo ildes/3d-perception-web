@@ -34,6 +34,9 @@ function init() {
     initGridSelector();
     updateGridSizeDisplay();
 
+    // Initialize ego sensor
+    initEgoSensor();
+
     // Attach canvases to viewports
     vp1.appendChild(mainScene.renderer.domElement);
     vp2.appendChild(sensorScene.renderer2.domElement);
@@ -61,12 +64,17 @@ function animate() {
 
     const state = window.appState;
     const time = Date.now() * 0.001;
-    
+
     if (!state.isDragging && state.cube) {
         state.cube.rotation.y = time * 0.5;
     }
 
-    updateSensorData();
+    // Update appropriate sensor based on mode
+    if (state.sensorMode === 'ego') {
+        updateEgoSensor();
+    } else {
+        updateSensorData();
+    }
 
     if (state.renderer && state.scene && state.camera) {
         state.renderer.clear();

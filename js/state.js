@@ -13,7 +13,8 @@ const state = {
     isDragging: false,
     activeRenderer: null,
     previousMousePosition: { x: 0, y: 0 },
-    isMovingObject: false
+    isMovingObject: false,
+    sensorMode: 'grid' // 'grid' or 'ego'
 };
 
 // Make state globally accessible for other modules

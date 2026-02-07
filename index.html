@@ -17,7 +17,14 @@
             </div>
         </div>
         <div id="info-panel">
-            <h2>Height Map Sensor</h2>
+            <h2>Sensor Visualization</h2>
+            <div class="control-group">
+                <label class="control-label">SENSOR MODE</label>
+                <div class="mode-toggle" id="mode-toggle">
+                    <button class="mode-btn active" data-mode="grid">Grid (Top-Down)</button>
+                    <button class="mode-btn" data-mode="ego">Ego-Centric</button>
+                </div>
+            </div>
             <div class="control-group">
                 <label class="control-label">GEOMETRY TYPE</label>
                 <select id="geometry-select">
@@ -26,6 +33,9 @@
                     <option value="cylinder">Cylinder</option>
                     <option value="cone">Cone</option>
                     <option value="torus">Torus</option>
+                    <option value="wall">Wall</option>
+                    <option value="chair">Chair</option>
+                    <option value="stairs">Stairs</option>
                 </select>
             </div>
             <div class="sensor-grid" id="sensor-grid"></div>
@@ -41,22 +51,50 @@
                     <span>16</span>
                 </div>
             </div>
+            <!-- Ego-centric config (hidden by default) -->
+            <div class="ego-config" id="ego-config" style="display: none;">
+                <h2 style="font-size: 12px; margin-bottom: 8px;">Ego Configuration</h2>
+                <div class="control-group">
+                    <label class="control-label">HORIZONTAL BINS</label>
+                    <input type="range" id="ego-h-bins" min="8" max="32" value="16" step="4">
+                    <span class="range-value" id="ego-h-value">16</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">VERTICAL BINS</label>
+                    <input type="range" id="ego-v-bins" min="4" max="16" value="8" step="2">
+                    <span class="range-value" id="ego-v-value">8</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">MAX RANGE (m)</label>
+                    <input type="range" id="ego-range" min="2" max="10" value="5" step="1">
+                    <span class="range-value" id="ego-range-value">5</span>
+                </div>
+                <div class="ego-tensor-display" id="ego-tensor-display"></div>
+            </div>
             <div class="stats">
-                <div class="stat-row">
+                <div class="stat-row" id="stat-grid-size">
                     <span>Grid Size</span>
                     <span class="stat-value" id="grid-size-display">8 × 8</span>
                 </div>
+                <div class="stat-row" id="stat-tensor-shape" style="display: none;">
+                    <span>Tensor Shape</span>
+                    <span class="stat-value" id="tensor-shape-display">8 × 16</span>
+                </div>
                 <div class="stat-row">
                     <span>Range</span>
-                    <span class="stat-value">±2.0m</span>
+                    <span class="stat-value" id="range-display">±2.0m</span>
                 </div>
                 <div class="stat-row">
                     <span>Detected</span>
                     <span class="stat-value" id="detected-count">0</span>
                 </div>
-                <div class="stat-row">
+                <div class="stat-row" id="stat-max-height">
                     <span>Max Height</span>
                     <span class="stat-value" id="max-height">0.00m</span>
+                </div>
+                <div class="stat-row" id="stat-min-dist" style="display: none;">
+                    <span>Min Distance</span>
+                    <span class="stat-value" id="min-distance">0.00m</span>
                 </div>
             </div>
         </div>
@@ -70,6 +108,7 @@
     <script src="js/ui.js"></script>
     <script src="js/grid-selector.js"></script>
     <script src="js/controls.js"></script>
+    <script src="js/ego-sensor.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

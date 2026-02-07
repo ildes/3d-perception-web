@@ -44,10 +44,16 @@ function onMouseMove2(event) {
     const deltaX = event.clientX - state.previousMousePosition.x;
     const deltaY = event.clientY - state.previousMousePosition.y;
 
-    state.cube.position.x += deltaY * 0.01;
-    state.cube.position.z -= deltaX * 0.01;
-    state.cube.position.x = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.x));
-    state.cube.position.z = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.z));
+    if (state.sensorMode === 'ego') {
+        // Move agent in ego mode
+        moveAgent(deltaY * 0.01, -deltaX * 0.01);
+    } else {
+        // Move object in grid mode
+        state.cube.position.x += deltaY * 0.01;
+        state.cube.position.z -= deltaX * 0.01;
+        state.cube.position.x = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.x));
+        state.cube.position.z = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.z));
+    }
 
     state.previousMousePosition = { x: event.clientX, y: event.clientY };
 }
