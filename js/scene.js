@@ -76,6 +76,9 @@ function initSensorScene(container, w, h) {
 
 function createGeometry(type, scene) {
     if (window.appState.cube) {
+        // Properly dispose old geometry and material to prevent memory leak
+        window.appState.cube.geometry.dispose();
+        window.appState.cube.material.dispose();
         scene.remove(window.appState.cube);
     }
 
