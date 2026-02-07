@@ -8,20 +8,28 @@ Vanilla JavaScript/HTML visualization using Three.js (r128) for 3D rendering. De
 ```
 grid/
 ├── index.html              # Main HTML, UI controls, script loading order
-├── css/styles.css          # All styling, dark theme, tensor display grid
+├── css/
+│   ├── styles-base.css     # Base styles, layout, common components (174 lines)
+│   ├── styles-grid.css     # Grid mode specific styles (121 lines)
+│   ├── styles-ego.css      # Ego mode config styles (72 lines)
+│   └── styles-tensor.css   # Tensor display styles (54 lines)
 ├── js/
 │   ├── config.js           # Constants: GRID_RANGE=3, EGO_FLOOR_RANGE=30, DEFAULT_GRID_SIZE=8
 │   ├── state.js            # Global window.appState object
 │   ├── scene-core.js       # Three.js scene setup (cameras, lights, renderers)
-│   ├── geometries.js       # ALL geometry creation functions (449 lines)
-│   ├── sensors.js          # Grid mode sensor (top-down heightmap)
+│   ├── geo-basic.js        # Geometry dispatcher and basic shapes (91 lines)
+│   ├── geo-structures.js   # Wall, TallWall, Chair, Stairs (87 lines)
+│   ├── geo-terrains.js     # PyramidStairs, RoughTerrain, SteppingStones (129 lines)
+│   ├── geo-interiors.js    # InteriorRoom, Corridor (143 lines)
+│   ├── sensors-grid.js     # Grid mode sensor (top-down heightmap) (210 lines)
+│   ├── sensors-utils.js    # Grid helper utilities (40 lines)
 │   ├── ui.js               # UI components for grid mode
 │   ├── grid-selector.js    # Grid size selector UI
 │   ├── controls.js         # Mouse/camera controls for both viewports
-│   ├── ego-config.js       # Ego sensor configuration and state (28 lines)
-│   ├── ego-visualization.js # Agent markers, whiskers, point cloud, tensor display (187 lines)
-│   ├── ego-ui.js           # Mode switching and UI management (135 lines)
-│   ├── ego-core.js         # Main update loop and raycasting (178 lines)
+│   ├── ego-config.js       # Ego sensor configuration and state (31 lines)
+│   ├── ego-visualization.js # Agent markers, whiskers, point cloud, cone, tensor (273 lines)
+│   ├── ego-ui.js           # Mode switching and UI management (200 lines)
+│   ├── ego-core.js         # Main update loop and raycasting (218 lines)
 │   ├── ego-agent.js        # Agent movement and rotation (59 lines)
 │   └── main.js             # Entry point: init(), animate() loop
 ├── test_heightmap.js       # Playwright test
@@ -40,10 +48,12 @@ grid/
 ### Ego-Centric Mode (Default)
 - Spherical raycasting from agent's perspective at `agentHeight` (1.0m)
 - Output: `[V_BINS × H_BINS]` tensor of normalized distances (0=close, 1=far/max range)
-- **Default config**: 64×32 bins, 5m range, 1.5 brightness
-- Vertical FOV: -60° (down) to +30° (up)
-- Horizontal FOV: Full 360° (cylinder unwrap: center=forward, edges=back)
+- **Default config**: 96×32 bins, 10m range, 1.0 brightness, histogram equalization
+- Vertical FOV: Separate sliders for up (+30°) and down (-60°) angles
+- Horizontal FOV: Slider 0°-360° (360°=full sphere, 180°=forward hemisphere)
+- Data Scaling: None (raw), Normalize (0-1), Histogram Equalization, Min-Max
 - Whisker visualization: Only shows tips near hit points (shorter=closer, longer=farther)
+- Yellow cone appears on FOV adjustment, fades out over 4 seconds
 - Agent projects onto geometry (walks on top of stairs, tables, etc.)
 - Floor size: 60×60 units in ego mode (10x larger than grid mode)
 - Use case: First-person spatial understanding for RL training
@@ -65,30 +75,40 @@ initSensorScene(container, w, h) // Setup right viewport (sensor view)
 onGeometryChange(event)          // Geometry select handler
 ```
 
-### geometries.js - Geometry Creation
+### Geometry Files
 ```javascript
+// geo-basic.js
 createGeometry(type, scene)     // Main dispatcher, handles disposal
+
+// geo-structures.js
+createWall(material)            // Simple wall
+createTallWall(material)        // Giant wall
+createChair(material)           // Chair with legs
+createStairs(material)          // Simple 4-step stairs
+
+// geo-terrains.js
 createPyramidStairs(material)   // Isaac Gym style concentric stairs
 createRoughTerrain(material)    // Random elevation bumps (smoothed)
 createSteppingStones(material)  // Irregular platforms with gaps
+
+// geo-interiors.js
 createInteriorRoom(material)    // Room with walls, door, table
 createCorridor(material)        // Long hallway with obstacles
-createStairs(material)          // Simple 4-step stairs
-createChair(material)           // Chair with legs
-createWall(material)            // Simple wall
-createTallWall(material)        // Giant wall
 ```
 
 ### ego-config.js - Configuration
 ```javascript
 egoConfig = {
-    hBins: 64,              // Horizontal bins (8-64)
-    vBins: 32,              // Vertical bins (4-32)
-    maxRange: 5,            // Max raycast distance
+    hBins: 96,              // Horizontal bins (8-256)
+    vBins: 32,              // Vertical bins (4-128)
+    maxRange: 10,           // Max raycast distance (1-20m, integer)
     vAngleMin: -60,         // Look down angle
     vAngleMax: 30,          // Look up angle
+    hAngleMin: -180,        // Horizontal FOV min
+    hAngleMax: 180,         // Horizontal FOV max
     agentHeight: 1.0,       // Sensor origin height
-    brightnessMultiplier: 1.5
+    brightnessMultiplier: 1.0,
+    scalingMode: 'equalize' // 'none' | 'normalize' | 'equalize' | 'minmax'
 };
 ```
 
@@ -165,7 +185,8 @@ python3 -m http.server 8080     # Serve locally
 ### CSS
 - Use kebab-case for IDs/classes
 - Color scheme: Dark theme (#0d1117, #21262d, #58a6ff)
-- Tensor grid uses `scaleY(-1)` to flip vertically
+- Split into 4 files: styles-base.css, styles-grid.css, styles-ego.css, styles-tensor.css
+- Tensor grid uses `scaleY(-1) scaleX(-1)` to flip vertically and horizontally
 
 ## Global State (window.appState)
 ```javascript
@@ -199,19 +220,28 @@ python3 -m http.server 8080     # Serve locally
 | Right (Sensor) | Scroll | Zoom |
 
 ## Adding New Geometry
-1. Add case to `createGeometry()` switch in `geometries.js`
-2. Create `createYourGeometry(material)` function returning THREE.Mesh or THREE.Group
-3. Add `<option value="your-geometry">Label</option>` to `#geometry-select` in `index.html`
-4. For terrain groups, use `optgroup` for organization
+1. Choose appropriate file based on category:
+   - `geo-basic.js` - Basic primitives
+   - `geo-structures.js` - Buildings, furniture
+   - `geo-terrains.js` - Outdoor terrain types
+   - `geo-interiors.js` - Indoor environments
+2. Add case to `createGeometry()` switch in `geo-basic.js`
+3. Create `createYourGeometry(material)` function returning THREE.Mesh or THREE.Group
+4. Add `<option value="your-geometry">Label</option>` to `#geometry-select` in `index.html`
+5. For terrain groups, use `optgroup` for organization
 
 ## Script Loading Order (index.html)
 Scripts must load in dependency order:
 ```html
 <script src="js/config.js"></script>
 <script src="js/state.js"></script>
-<script src="js/geometries.js"></script>    <!-- createGeometry() used by scene-core -->
-<script src="js/scene-core.js"></script>    <!-- Depends on geometries -->
-<script src="js/sensors.js"></script>
+<script src="js/geo-basic.js"></script>      <!-- createGeometry() dispatcher -->
+<script src="js/geo-structures.js"></script> <!-- Wall, Chair, Stairs -->
+<script src="js/geo-terrains.js"></script>   <!-- Pyramid, Rough, Stepping -->
+<script src="js/geo-interiors.js"></script>  <!-- Room, Corridor -->
+<script src="js/scene-core.js"></script>    <!-- Depends on geo-* -->
+<script src="js/sensors-grid.js"></script>  <!-- Grid mode sensor -->
+<script src="js/sensors-utils.js"></script> <!-- Grid helpers -->
 <script src="js/ui.js"></script>
 <script src="js/grid-selector.js"></script>
 <script src="js/controls.js"></script>
