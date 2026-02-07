@@ -40,7 +40,7 @@
             </div>
             <div class="sensor-grid" id="sensor-grid"></div>
             <div class="grid-selector-container">
-                <h2 style="font-size: 12px; margin-bottom: 8px;">Grid Configuration</h2>
+                <h2>Grid Configuration</h2>
                 <div class="grid-selector" id="grid-selector">
                     <div class="grid-selector-cells" id="grid-selector-cells"></div>
                     <div class="grid-selector-preview" id="grid-selector-preview">8 × 8</div>
@@ -53,22 +53,23 @@
             </div>
             <!-- Ego-centric config (hidden by default) -->
             <div class="ego-config" id="ego-config" style="display: none;">
-                <h2 style="font-size: 12px; margin-bottom: 8px;">Ego Configuration</h2>
+                <h2>Ego Configuration</h2>
                 <div class="control-group">
-                    <label class="control-label">HORIZONTAL BINS</label>
+                    <label class="control-label">H-BINS</label>
                     <input type="range" id="ego-h-bins" min="8" max="32" value="16" step="4">
                     <span class="range-value" id="ego-h-value">16</span>
                 </div>
                 <div class="control-group">
-                    <label class="control-label">VERTICAL BINS</label>
+                    <label class="control-label">V-BINS</label>
                     <input type="range" id="ego-v-bins" min="4" max="16" value="8" step="2">
                     <span class="range-value" id="ego-v-value">8</span>
                 </div>
                 <div class="control-group">
-                    <label class="control-label">MAX RANGE (m)</label>
+                    <label class="control-label">RANGE (m)</label>
                     <input type="range" id="ego-range" min="2" max="10" value="5" step="1">
                     <span class="range-value" id="ego-range-value">5</span>
                 </div>
+                <h2>Distance Tensor</h2>
                 <div class="ego-tensor-display" id="ego-tensor-display"></div>
             </div>
             <div class="stats">

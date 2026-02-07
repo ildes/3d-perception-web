@@ -34,7 +34,11 @@ function onMouseDown(event) {
 function onMouseDown2(event) {
     window.appState.isDragging = true;
     window.appState.isMovingObject = true;
+    window.appState.isRotatingAgent = event.shiftKey || event.button === 2;
     window.appState.previousMousePosition = { x: event.clientX, y: event.clientY };
+
+    // Prevent context menu on right-click
+    if (event.button === 2) event.preventDefault();
 }
 
 function onMouseMove2(event) {
@@ -45,8 +49,13 @@ function onMouseMove2(event) {
     const deltaY = event.clientY - state.previousMousePosition.y;
 
     if (state.sensorMode === 'ego') {
-        // Move agent in ego mode
-        moveAgent(deltaY * 0.01, -deltaX * 0.01);
+        if (state.isRotatingAgent) {
+            // Rotate agent with shift+drag or right-click drag
+            rotateAgent(-deltaX * 0.01);
+        } else {
+            // Move agent in ego mode
+            moveAgent(deltaY * 0.01, -deltaX * 0.01);
+        }
     } else {
         // Move object in grid mode
         state.cube.position.x += deltaY * 0.01;
@@ -61,6 +70,7 @@ function onMouseMove2(event) {
 function onMouseUp2() {
     window.appState.isDragging = false;
     window.appState.isMovingObject = false;
+    window.appState.isRotatingAgent = false;
 }
 
 function onMouseMove(event) {
