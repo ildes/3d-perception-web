@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Height Map Sensor Visualization</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <div id="container">
+        <div id="viewport-container">
+            <div id="viewport1">
+                <div class="viewport-label">3D SCENE</div>
+            </div>
+            <div id="viewport2">
+                <div class="viewport-label">SENSOR DATA</div>
+            </div>
+        </div>
+        <div id="info-panel">
+            <h2>Height Map Sensor</h2>
+            <div class="control-group">
+                <label class="control-label">GEOMETRY TYPE</label>
+                <select id="geometry-select">
+                    <option value="cube">Cube</option>
+                    <option value="sphere">Sphere</option>
+                    <option value="cylinder">Cylinder</option>
+                    <option value="cone">Cone</option>
+                    <option value="torus">Torus</option>
+                </select>
+            </div>
+            <div class="sensor-grid" id="sensor-grid"></div>
+            <div class="grid-selector-container">
+                <h2 style="font-size: 12px; margin-bottom: 8px;">Grid Configuration</h2>
+                <div class="grid-selector" id="grid-selector">
+                    <div class="grid-selector-cells" id="grid-selector-cells"></div>
+                    <div class="grid-selector-preview" id="grid-selector-preview">8 × 8</div>
+                </div>
+                <input type="range" id="grid-size-slider" min="4" max="16" value="8" step="2">
+                <div class="grid-size-labels">
+                    <span>4</span>
+                    <span>16</span>
+                </div>
+            </div>
+            <div class="stats">
+                <div class="stat-row">
+                    <span>Grid Size</span>
+                    <span class="stat-value" id="grid-size-display">8 × 8</span>
+                </div>
+                <div class="stat-row">
+                    <span>Range</span>
+                    <span class="stat-value">±2.0m</span>
+                </div>
+                <div class="stat-row">
+                    <span>Detected</span>
+                    <span class="stat-value" id="detected-count">0</span>
+                </div>
+                <div class="stat-row">
+                    <span>Max Height</span>
+                    <span class="stat-value" id="max-height">0.00m</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/state.js"></script>
+    <script src="js/scene.js"></script>
+    <script src="js/sensors.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/grid-selector.js"></script>
+    <script src="js/controls.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
