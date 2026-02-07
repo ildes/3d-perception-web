@@ -2,15 +2,15 @@
 
 // Ego sensor configuration
 const egoConfig = {
-    hBins: 32,          // Horizontal angle bins (around agent)
-    vBins: 16,          // Vertical angle bins (up/down)
-    maxRange: 20,       // Max detection range in meters
+    hBins: 64,          // Horizontal angle bins (around agent)
+    vBins: 32,          // Vertical angle bins (up/down)
+    maxRange: 5,        // Max detection range in meters
     vAngleMin: -60,     // Looking down (degrees)
     vAngleMax: 30,      // Looking up (degrees)
     hAngleMin: -180,    // Full 360
     hAngleMax: 180,
     agentHeight: 1.0,   // Height of sensor origin from ground
-    brightnessMultiplier: 2.0  // Multiplier for distance-based brightness
+    brightnessMultiplier: 1.5  // Multiplier for distance-based brightness
 };
 
 // Ego sensor state

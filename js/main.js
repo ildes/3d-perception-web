@@ -22,8 +22,8 @@ function init() {
     window.appState.camera2 = sensorScene.camera2;
     window.appState.renderer2 = sensorScene.renderer2;
 
-    // Create initial geometry (cube by default)
-    createGeometry('cube', mainScene.scene);
+    // Create initial geometry (room w/ table by default)
+    createGeometry('interior-room', mainScene.scene);
 
     // Create visualizations
     createSensorVisualization(mainScene.scene);
@@ -36,6 +36,9 @@ function init() {
 
     // Initialize ego sensor
     initEgoSensor();
+
+    // Set initial mode to ego
+    setActiveMode('ego');
 
     // Attach canvases to viewports
     vp1.appendChild(mainScene.renderer.domElement);
