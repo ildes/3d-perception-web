@@ -196,7 +196,8 @@ function updateGridHelpers(scene) {
     // Find and remove old GridHelper
     const oldHelper = scene.children.find(child => child instanceof THREE.GridHelper);
     if (oldHelper) {
-        oldHelper.dispose();
+        oldHelper.geometry.dispose();
+        oldHelper.material.dispose();
         scene.remove(oldHelper);
     }
 
