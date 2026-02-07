@@ -22,7 +22,7 @@ function init() {
     window.appState.camera2 = sensorScene.camera2;
     window.appState.renderer2 = sensorScene.renderer2;
 
-    // Create initial geometry
+    // Create initial geometry (cube by default)
     createGeometry('cube', mainScene.scene);
 
     // Create visualizations
@@ -66,7 +66,8 @@ function animate() {
     const state = window.appState;
     const time = Date.now() * 0.001;
 
-    if (!state.isDragging && state.cube) {
+    const spinEnabled = document.getElementById('spin-checkbox')?.checked;
+    if (!state.isDragging && state.cube && spinEnabled) {
         state.cube.rotation.y = time * 0.5;
     }
 

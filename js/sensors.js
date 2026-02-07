@@ -7,7 +7,14 @@ const rayDirection = new THREE.Vector3(0, -1, 0);
 
 // Throttling control
 let lastSensorUpdate = 0;
-const SENSOR_UPDATE_INTERVAL = 16; // ~60fps max for sensor updates
+const SENSOR_UPDATE_INTERVAL = 50; // ~20fps for sensor updates
+const COLOR_BINS = 64; // Quantization bins for color
+
+// Quantize value to N bins
+function quantize(value, maxValue, bins) {
+    const normalized = Math.min(1, Math.max(0, value / maxValue));
+    return Math.floor(normalized * (bins - 1)) / (bins - 1);
+}
 
 function createSensorVisualization(targetScene) {
     // Remove existing if any
@@ -86,6 +93,7 @@ function createHeightBars(targetScene) {
 function updateSensorData() {
     const state = window.appState;
     if (!state.sensorPoints || !state.heightBars) return;
+    if (state.sensorMode === 'ego') return; // Skip in ego mode
 
     // Throttle updates
     const now = performance.now();
@@ -97,8 +105,36 @@ function updateSensorData() {
     let detectedCount = 0;
     let maxHeight = 0;
 
-    // Build exclusion list once (objects that shouldn't be hit by raycaster)
-    const excludeObjects = new Set([state.sensorPoints]);
+    // Build list of objects TO raycast against (whitelist approach)
+    // Only include the actual geometry object (cube/wall/etc)
+    const targetObjects = [];
+    if (state.cube && state.cube.visible) {
+        targetObjects.push(state.cube);
+    }
+
+    // If no target objects, all sensors should read 0
+    if (targetObjects.length === 0) {
+        for (let i = 0; i < GRID_SIZE * GRID_SIZE; i++) {
+            state.sensorData[i] = 0;
+
+            // Reset sensor point Y position
+            positions[i * 3 + 1] = 0.05;
+
+            if (cells[i]) cells[i].classList.remove('active');
+
+            const bar = state.heightBars.children[i];
+            if (bar) {
+                // Reset to base height and color
+                bar.scale.y = 1;
+                bar.position.y = 0.005;
+                bar.material.color.setRGB(0.94, 0.53, 0.24);
+            }
+        }
+        state.sensorPoints.geometry.attributes.position.needsUpdate = true;
+        document.getElementById('detected-count').textContent = 0;
+        document.getElementById('max-height').textContent = '0.00m';
+        return;
+    }
 
     for (let i = 0; i < GRID_SIZE; i++) {
         for (let j = 0; j < GRID_SIZE; j++) {
@@ -106,68 +142,70 @@ function updateSensorData() {
             const x = -GRID_RANGE + (i + 0.5) * GRID_CELL_SIZE;
             const z = -GRID_RANGE + (j + 0.5) * GRID_CELL_SIZE;
 
-            // Reuse raycaster instance
-            rayOrigin.set(x, 3, z);
+            // Reuse raycaster instance - shoot from high above
+            rayOrigin.set(x, 20, z);
             sensorRaycaster.set(rayOrigin, rayDirection);
-            const intersects = sensorRaycaster.intersectObjects(state.scene.children, true);
+
+            // Only raycast against target objects (the geometry we care about)
+            const intersects = sensorRaycaster.intersectObjects(targetObjects, true);
 
             let hitY = 0;
-            let found = false;
-            for (const hit of intersects) {
-                if (!excludeObjects.has(hit.object)) {
-                    hitY = hit.point.y;
-                    found = true;
-                    break;
+            if (intersects.length > 0) {
+                hitY = intersects[0].point.y;
+                // Only count as detection if hit something above ground level
+                if (hitY > 0.01) {
+                    detectedCount++;
+                    maxHeight = Math.max(maxHeight, hitY);
+                } else {
+                    hitY = 0;
                 }
-            }
-
-            if (found) {
-                hitY = Math.max(0, hitY);
-                detectedCount++;
-                maxHeight = Math.max(maxHeight, hitY);
-            } else {
-                hitY = 0;
             }
 
             state.sensorData[idx] = hitY;
 
-            const pointIdx = idx * 3;
-            positions[pointIdx] = x;
-            positions[pointIdx + 1] = hitY + 0.05;
-            positions[pointIdx + 2] = z;
+            // Update sensor point Y position based on hit height
+            const posIdx = idx * 3;
+            positions[posIdx + 1] = 0.05 + hitY;
 
-            if (cells[idx]) {
-                cells[idx].classList.toggle('active', hitY > 0.05);
+            // Flip horizontally for UI display
+            const uiIdx = i * GRID_SIZE + (GRID_SIZE - 1 - j);
+            if (cells[uiIdx]) {
+                cells[uiIdx].classList.toggle('active', hitY > 0.05);
             }
 
             const bar = state.heightBars.children[idx];
             if (bar) {
-                const targetHeight = Math.max(0.01, hitY * 0.8);
+                // Update bar height based on detected height
+                const barHeight = Math.max(0.01, hitY);
+                bar.scale.y = barHeight / 0.01; // Scale relative to base height
+                bar.position.y = barHeight / 2; // Center bar at half its height
 
-                // Only update geometry if height changed significantly (avoid constant allocations)
-                const currentHeight = bar.geometry.parameters?.height || 0.01;
-                if (Math.abs(targetHeight - currentHeight) > 0.005) {
-                    bar.geometry.dispose();
-                    bar.geometry = new THREE.BoxGeometry(
-                        GRID_CELL_SIZE * 0.8,
-                        targetHeight,
-                        GRID_CELL_SIZE * 0.8
-                    );
-                }
-                bar.position.y = targetHeight / 2;
-
-                const intensity = hitY / 1.5;
-                bar.material.color.setRGB(0.94 - intensity * 0.5, 0.53 - intensity * 0.2, 0.24 + intensity * 0.3);
-                bar.material.emissive.setHex(0xf0883e);
-                bar.material.emissiveIntensity = intensity * 0.5;
+                // Consistent orange color (matching accent2: #f0883e)
+                bar.material.color.setRGB(0.94, 0.53, 0.24);
             }
         }
     }
 
+    // Mark positions buffer as needing update
     state.sensorPoints.geometry.attributes.position.needsUpdate = true;
 
     document.getElementById('detected-count').textContent = detectedCount;
     document.getElementById('max-height').textContent = maxHeight.toFixed(2) + 'm';
+
+    // Log tensor output for debugging (only when something is detected)
+    if (detectedCount > 0 && Math.random() < 0.05) { // Log ~5% of frames to avoid spam
+        console.log('Grid Tensor [' + GRID_SIZE + 'x' + GRID_SIZE + ']:');
+        let tensorStr = '';
+        for (let i = 0; i < GRID_SIZE; i++) {
+            let row = '';
+            for (let j = 0; j < GRID_SIZE; j++) {
+                const val = state.sensorData[i * GRID_SIZE + j];
+                row += val.toFixed(2).padStart(5) + ' ';
+            }
+            tensorStr += row + '\n';
+        }
+        console.log(tensorStr);
+    }
 }
 
 function recreateGrid() {

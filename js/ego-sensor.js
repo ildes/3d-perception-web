@@ -2,14 +2,15 @@
 
 // Ego sensor configuration
 const egoConfig = {
-    hBins: 16,          // Horizontal angle bins (around agent)
-    vBins: 8,           // Vertical angle bins (up/down)
-    maxRange: 5,        // Max detection range in meters
+    hBins: 32,          // Horizontal angle bins (around agent)
+    vBins: 16,          // Vertical angle bins (up/down)
+    maxRange: 20,       // Max detection range in meters
     vAngleMin: -60,     // Looking down (degrees)
     vAngleMax: 30,      // Looking up (degrees)
     hAngleMin: -180,    // Full 360
     hAngleMax: 180,
-    agentHeight: 1.0    // Height of sensor origin from ground
+    agentHeight: 1.0,   // Height of sensor origin from ground
+    brightnessMultiplier: 2.0  // Multiplier for distance-based brightness
 };
 
 // Ego sensor state
@@ -17,12 +18,16 @@ let egoTensorData = null;
 let egoRayHelper = null;
 let egoAgentMarker = null;
 let egoTensorCells = null;
-let egoDepthBars = null; // Height bars for ego mode viewport
+let egoPointCloud = null; // Point cloud for viewport2
 
 // Reusable objects for raycasting
 const egoRaycaster = new THREE.Raycaster();
 const egoRayOrigin = new THREE.Vector3();
 const egoRayDir = new THREE.Vector3();
+
+// Throttling for ego sensor
+let lastEgoUpdate = 0;
+const EGO_UPDATE_INTERVAL = 50; // ~20fps
 
 function initEgoSensor() {
     egoTensorData = new Float32Array(egoConfig.vBins * egoConfig.hBins);
@@ -30,7 +35,7 @@ function initEgoSensor() {
     createTensorDisplay();
     createAgentMarker();
     createEgoRayVisualization();
-    createEgoDepthBars();
+    createEgoPointCloud();
 }
 
 function setupEgoUI() {
@@ -62,6 +67,14 @@ function setupEgoUI() {
         });
     }
 
+    const brightnessSlider = document.getElementById('ego-brightness');
+    if (brightnessSlider) {
+        brightnessSlider.addEventListener('input', (e) => {
+            egoConfig.brightnessMultiplier = parseFloat(e.target.value);
+            document.getElementById('ego-brightness-value').textContent = egoConfig.brightnessMultiplier.toFixed(1);
+        });
+    }
+
     // Mode toggle
     const modeToggle = document.getElementById('mode-toggle');
     if (modeToggle) {
@@ -85,7 +98,7 @@ function setActiveMode(mode) {
     const egoConfigEl = document.getElementById('ego-config');
     const sensorGrid = document.getElementById('sensor-grid');
     const viewport2 = document.getElementById('viewport2');
-    const viewport2Label = viewport2.querySelector('.viewport-label');
+    const viewport2Label = viewport2 ? viewport2.querySelector('.viewport-label') : null;
 
     if (mode === 'ego') {
         if (gridConfig) gridConfig.style.display = 'none';
@@ -96,13 +109,16 @@ function setActiveMode(mode) {
         document.getElementById('stat-max-height').style.display = 'none';
         document.getElementById('stat-min-dist').style.display = 'flex';
         document.getElementById('range-display').textContent = egoConfig.maxRange + 'm';
-        viewport2Label.textContent = 'DEPTH SENSOR VIEW';
+        if (viewport2Label) viewport2Label.textContent = 'AGENT POV';
         updateTensorShapeDisplay();
+
+        // Resize floor for ego mode (10x larger)
+        resizeFloorForMode('ego');
 
         // Show ego visualizations
         if (egoAgentMarker) egoAgentMarker.visible = true;
         if (egoRayHelper) egoRayHelper.visible = true;
-        if (egoDepthBars) egoDepthBars.visible = true;
+        if (egoPointCloud) egoPointCloud.visible = true;
         if (state.sensorPoints) state.sensorPoints.visible = false;
         if (state.heightBars) state.heightBars.visible = false;
     } else {
@@ -113,24 +129,61 @@ function setActiveMode(mode) {
         document.getElementById('stat-tensor-shape').style.display = 'none';
         document.getElementById('stat-max-height').style.display = 'flex';
         document.getElementById('stat-min-dist').style.display = 'none';
-        document.getElementById('range-display').textContent = '±2.0m';
-        viewport2Label.textContent = 'SENSOR DATA';
+        document.getElementById('range-display').textContent = '±' + GRID_RANGE + 'm';
+        if (viewport2Label) viewport2Label.textContent = 'SENSOR DATA';
+
+        // Resize floor back to grid mode size
+        resizeFloorForMode('grid');
 
         // Show grid visualizations
         if (egoAgentMarker) egoAgentMarker.visible = false;
         if (egoRayHelper) egoRayHelper.visible = false;
-        if (egoDepthBars) egoDepthBars.visible = false;
+        if (egoPointCloud) egoPointCloud.visible = false;
         if (state.sensorPoints) state.sensorPoints.visible = true;
         if (state.heightBars) state.heightBars.visible = true;
     }
 }
 
+function resizeFloorForMode(mode) {
+    const state = window.appState;
+    if (!state.scene || !state.floor) return;
+
+    const floorRange = (mode === 'ego') ? EGO_FLOOR_RANGE : GRID_RANGE;
+    const floorSize = floorRange * 2;
+
+    // Dispose old geometry
+    if (state.floor.geometry) {
+        state.floor.geometry.dispose();
+    }
+
+    // Create new floor geometry
+    state.floor.geometry = new THREE.PlaneGeometry(floorSize, floorSize);
+
+    // Also update the grid helper
+    const gridHelpers = state.scene.children.filter(c => c instanceof THREE.GridHelper);
+    gridHelpers.forEach(g => {
+        state.scene.remove(g);
+        if (g.geometry) g.geometry.dispose();
+        if (g.material) g.material.dispose();
+    });
+
+    const gridHelper = new THREE.GridHelper(floorSize, (mode === 'ego') ? 60 : GRID_SIZE, 0x30363d, 0x21262d);
+    state.scene.add(gridHelper);
+}
+
 function reinitEgoSensor() {
+    const state = window.appState;
     egoTensorData = new Float32Array(egoConfig.vBins * egoConfig.hBins);
     createTensorDisplay();
     createEgoRayVisualization();
-    createEgoDepthBars();
+    createEgoPointCloud();
     updateTensorShapeDisplay();
+
+    // Restore visibility if in ego mode
+    if (state.sensorMode === 'ego') {
+        if (egoRayHelper) egoRayHelper.visible = true;
+        if (egoPointCloud) egoPointCloud.visible = true;
+    }
 }
 
 function updateTensorShapeDisplay() {
@@ -142,14 +195,22 @@ function createTensorDisplay() {
     const container = document.getElementById('ego-tensor-display');
     if (!container) return;
 
+    // Clear existing content
+    container.innerHTML = '';
+
+    const totalCells = egoConfig.vBins * egoConfig.hBins;
+    console.log(`Creating tensor display: ${egoConfig.vBins}x${egoConfig.hBins} = ${totalCells} cells`);
+
     // Grid of colored cells only (no numbers)
+    // Cylinder unwrap: left edge = back-left (-180°), center = forward (0°), right edge = back-right (+180°)
     let html = `
-        <div class="tensor-axis-label top">← Back | Front →</div>
-        <div class="tensor-axis-label left">Up</div>
-        <div class="ego-tensor-grid" style="grid-template-columns: repeat(${egoConfig.hBins}, 1fr);">
+        <div class="tensor-axis-label top">Back ← | Front | → Back</div>
+        <div class="tensor-axis-label left">Down</div>
+        <div class="ego-tensor-grid" style="grid-template-columns: repeat(${egoConfig.hBins}, 1fr); grid-template-rows: repeat(${egoConfig.vBins}, 1fr);">
     `;
 
-    for (let v = 0; v < egoConfig.vBins; v++) {
+    // Render rows in reverse order so top of display = looking up, bottom = looking down
+    for (let v = egoConfig.vBins - 1; v >= 0; v--) {
         for (let h = 0; h < egoConfig.hBins; h++) {
             const idx = v * egoConfig.hBins + h;
             html += `<div class="ego-tensor-cell" data-idx="${idx}"></div>`;
@@ -159,6 +220,7 @@ function createTensorDisplay() {
     html += '</div>';
     container.innerHTML = html;
     egoTensorCells = container.querySelectorAll('.ego-tensor-cell');
+    console.log(`Created ${egoTensorCells.length} tensor cells`);
 }
 
 function createAgentMarker() {
@@ -211,91 +273,87 @@ function createEgoRayVisualization() {
 
     if (egoRayHelper) {
         state.scene.remove(egoRayHelper);
-        egoRayHelper.geometry.dispose();
-        egoRayHelper.material.dispose();
-    }
-
-    const rayPositions = [];
-    const rayColors = [];
-
-    for (let v = 0; v < egoConfig.vBins; v++) {
-        for (let h = 0; h < egoConfig.hBins; h++) {
-            rayPositions.push(0, egoConfig.agentHeight, 0);
-            rayColors.push(1.0, 1.0, 0.0); // Yellow
-
-            const { dir } = getEgoRayDirection(v, h);
-            rayPositions.push(dir.x * 0.5, egoConfig.agentHeight + dir.y * 0.5, dir.z * 0.5);
-            rayColors.push(1.0, 0.5, 0.0); // Orange
-        }
-    }
-
-    const geometry = new THREE.BufferGeometry();
-    geometry.setAttribute('position', new THREE.Float32BufferAttribute(rayPositions, 3));
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(rayColors, 3));
-
-    const material = new THREE.LineBasicMaterial({
-        vertexColors: true,
-        transparent: true,
-        opacity: 0.8,
-        linewidth: 2 // Note: may not work on all platforms
-    });
-
-    egoRayHelper = new THREE.LineSegments(geometry, material);
-    egoRayHelper.visible = false;
-    state.scene.add(egoRayHelper);
-}
-
-// Create depth visualization bars for ego mode (in scene2)
-function createEgoDepthBars() {
-    const state = window.appState;
-    if (!state.scene2) return;
-
-    if (egoDepthBars) {
-        state.scene2.remove(egoDepthBars);
-        egoDepthBars.traverse(child => {
+        egoRayHelper.traverse(child => {
             if (child.geometry) child.geometry.dispose();
             if (child.material) child.material.dispose();
         });
     }
 
-    const barsGroup = new THREE.Group();
-
-    // Create a grid of bars representing the sensor tensor
-    // Layout: horizontal = h bins, depth = v bins
-    const barWidth = 0.3;
-    const spacing = 0.35;
-    const totalWidth = egoConfig.hBins * spacing;
-    const totalDepth = egoConfig.vBins * spacing;
+    // Use a group of cylinder meshes for whisker tips
+    egoRayHelper = new THREE.Group();
+    const whiskerRadius = 0.005; // Half width
 
     for (let v = 0; v < egoConfig.vBins; v++) {
         for (let h = 0; h < egoConfig.hBins; h++) {
-            const barMat = new THREE.MeshStandardMaterial({
-                color: 0x888888,
-                metalness: 0.3,
-                roughness: 0.7
-            });
+            const { dir } = getEgoRayDirection(v, h);
 
-            const barGeo = new THREE.BoxGeometry(barWidth, 0.1, barWidth);
-            const bar = new THREE.Mesh(barGeo, barMat);
+            // Create cylinder geometry for each whisker
+            const cylGeo = new THREE.CylinderGeometry(whiskerRadius, whiskerRadius, 1, 4);
+            const cylMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
+            const cylinder = new THREE.Mesh(cylGeo, cylMat);
 
-            // Position: center the grid
-            const x = (h - egoConfig.hBins / 2 + 0.5) * spacing;
-            const z = (v - egoConfig.vBins / 2 + 0.5) * spacing;
+            // Store direction for later updates
+            cylinder.userData = { v, h, dir: dir.clone() };
 
-            bar.position.set(x, 0.05, z);
-            bar.userData = { vIdx: v, hIdx: h };
-            barsGroup.add(bar);
+            // Initially hidden (zero scale)
+            cylinder.scale.set(1, 0.001, 1);
+            cylinder.visible = false;
+
+            egoRayHelper.add(cylinder);
         }
     }
 
-    barsGroup.visible = false;
-    state.scene2.add(barsGroup);
-    egoDepthBars = barsGroup;
+    egoRayHelper.visible = false;
+    state.scene.add(egoRayHelper);
+}
+
+// Create point cloud visualization for ego mode viewport2
+function createEgoPointCloud() {
+    const state = window.appState;
+    if (!state.scene2) return;
+
+    if (egoPointCloud) {
+        state.scene2.remove(egoPointCloud);
+        egoPointCloud.geometry.dispose();
+        egoPointCloud.material.dispose();
+    }
+
+    const numPoints = egoConfig.vBins * egoConfig.hBins;
+    const positions = new Float32Array(numPoints * 3);
+    const colors = new Float32Array(numPoints * 3);
+
+    // Initialize all points at origin
+    for (let i = 0; i < numPoints; i++) {
+        positions[i * 3] = 0;
+        positions[i * 3 + 1] = 0;
+        positions[i * 3 + 2] = 0;
+        colors[i * 3] = 1;
+        colors[i * 3 + 1] = 1;
+        colors[i * 3 + 2] = 1;
+    }
+
+    const geometry = new THREE.BufferGeometry();
+    geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
+
+    const material = new THREE.PointsMaterial({
+        size: 0.15,
+        vertexColors: true,
+        transparent: true,
+        opacity: 0.9
+    });
+
+    egoPointCloud = new THREE.Points(geometry, material);
+    egoPointCloud.visible = false;
+    state.scene2.add(egoPointCloud);
 }
 
 function getEgoRayDirection(vIndex, hIndex) {
     const vAngle = egoConfig.vAngleMin +
         (vIndex / Math.max(1, egoConfig.vBins - 1)) * (egoConfig.vAngleMax - egoConfig.vAngleMin);
+
+    // Cylinder unwrap orientation: center column = forward (0°), edges = back (±180°)
+    // Map hIndex [0, hBins-1] → [-180°, +180°]
     const hAngle = egoConfig.hAngleMin +
         (hIndex / Math.max(1, egoConfig.hBins - 1)) * (egoConfig.hAngleMax - egoConfig.hAngleMin);
 
@@ -316,20 +374,28 @@ function updateEgoSensor() {
     const state = window.appState;
     if (state.sensorMode !== 'ego' || !egoTensorData) return;
 
+    // Throttle updates to ~20fps
+    const now = performance.now();
+    if (now - lastEgoUpdate < EGO_UPDATE_INTERVAL) return;
+    lastEgoUpdate = now;
+
     const agentPos = egoAgentMarker ? egoAgentMarker.position : new THREE.Vector3(0, 0, 0);
     const agentRot = egoAgentMarker ? egoAgentMarker.rotation.y : 0;
-    const rayPositions = egoRayHelper?.geometry.attributes.position.array;
-    const rayColors = egoRayHelper?.geometry.attributes.color.array;
+    const whiskers = egoRayHelper?.children;
+    const pointPositions = egoPointCloud?.geometry.attributes.position.array;
+    const pointColors = egoPointCloud?.geometry.attributes.color.array;
 
     let minDist = egoConfig.maxRange;
     let hitCount = 0;
 
-    // Build exclusion set
-    const excludeObjects = new Set();
-    if (egoAgentMarker) egoAgentMarker.traverse(obj => excludeObjects.add(obj));
-    if (egoRayHelper) excludeObjects.add(egoRayHelper);
-    if (state.sensorPoints) excludeObjects.add(state.sensorPoints);
-    if (egoDepthBars) egoDepthBars.traverse(obj => excludeObjects.add(obj));
+    // Whitelist approach: raycast against geometry and floor
+    const targetObjects = [];
+    if (state.cube && state.cube.visible) {
+        targetObjects.push(state.cube);
+    }
+    if (state.floor) {
+        targetObjects.push(state.floor);
+    }
 
     for (let v = 0; v < egoConfig.vBins; v++) {
         for (let h = 0; h < egoConfig.hBins; h++) {
@@ -344,79 +410,113 @@ function updateEgoSensor() {
             egoRaycaster.set(egoRayOrigin, rotatedDir);
             egoRaycaster.far = egoConfig.maxRange;
 
-            const intersects = egoRaycaster.intersectObjects(state.scene.children, true);
+            // Only raycast against target objects
+            const intersects = targetObjects.length > 0
+                ? egoRaycaster.intersectObjects(targetObjects, true)
+                : [];
 
             let distance = egoConfig.maxRange;
             let hit = false;
+            let hitPoint = null;
 
-            for (const intersect of intersects) {
-                if (!excludeObjects.has(intersect.object)) {
-                    distance = intersect.distance;
-                    hit = true;
-                    hitCount++;
-                    minDist = Math.min(minDist, distance);
-                    break;
-                }
+            if (intersects.length > 0) {
+                distance = intersects[0].distance;
+                hitPoint = intersects[0].point.clone();
+                hit = true;
+                hitCount++;
+                minDist = Math.min(minDist, distance);
             }
 
             // Store normalized distance
             egoTensorData[idx] = distance / egoConfig.maxRange;
 
-            // Update ray visualization
-            if (rayPositions) {
-                const rayIdx = idx * 6;
-                rayPositions[rayIdx] = agentPos.x;
-                rayPositions[rayIdx + 1] = agentPos.y + egoConfig.agentHeight;
-                rayPositions[rayIdx + 2] = agentPos.z;
+            // Update whisker cylinder visualization - show only tip near hit point
+            if (whiskers && whiskers[idx]) {
+                const cylinder = whiskers[idx];
 
-                const endDist = hit ? distance : egoConfig.maxRange * 0.3;
-                rayPositions[rayIdx + 3] = agentPos.x + rotatedDir.x * endDist;
-                rayPositions[rayIdx + 4] = agentPos.y + egoConfig.agentHeight + rotatedDir.y * endDist;
-                rayPositions[rayIdx + 5] = agentPos.z + rotatedDir.z * endDist;
-
-                // Color: bright yellow/orange when hit, dim when miss
-                const colorIdx = idx * 6;
                 if (hit) {
-                    const t = distance / egoConfig.maxRange;
-                    rayColors[colorIdx] = 1.0;
-                    rayColors[colorIdx + 1] = 1 - t * 0.5;
-                    rayColors[colorIdx + 2] = 0;
-                    rayColors[colorIdx + 3] = 1.0;
-                    rayColors[colorIdx + 4] = 0.5 - t * 0.3;
-                    rayColors[colorIdx + 5] = 0;
+                    cylinder.visible = true;
+
+                    // Tip length: shorter for close hits, longer for far hits
+                    // Close = 0.1, Far = 0.5 of distance (inversely proportional visibility)
+                    const normalizedDist = distance / egoConfig.maxRange;
+                    const tipLength = 0.1 + normalizedDist * 0.4; // 0.1 to 0.5
+
+                    // Position tip at the hit point, extending back toward agent
+                    const tipEndX = hitPoint.x;
+                    const tipEndY = hitPoint.y;
+                    const tipEndZ = hitPoint.z;
+                    const tipStartX = hitPoint.x - rotatedDir.x * tipLength;
+                    const tipStartY = hitPoint.y - rotatedDir.y * tipLength;
+                    const tipStartZ = hitPoint.z - rotatedDir.z * tipLength;
+
+                    // Position at midpoint of tip
+                    cylinder.position.set(
+                        (tipStartX + tipEndX) / 2,
+                        (tipStartY + tipEndY) / 2,
+                        (tipStartZ + tipEndZ) / 2
+                    );
+
+                    // Scale Y to tip length
+                    cylinder.scale.set(1, tipLength, 1);
+
+                    // Orient cylinder along ray direction
+                    cylinder.quaternion.setFromUnitVectors(
+                        new THREE.Vector3(0, 1, 0),
+                        rotatedDir
+                    );
+
+                    // Color: bright for close, dim for far (with brightness multiplier)
+                    const baseBrightness = 1 - normalizedDist;
+                    const brightness = Math.min(1, baseBrightness * egoConfig.brightnessMultiplier);
+                    cylinder.material.color.setRGB(brightness, brightness, brightness);
                 } else {
-                    rayColors[colorIdx] = 0.3;
-                    rayColors[colorIdx + 1] = 0.3;
-                    rayColors[colorIdx + 2] = 0.3;
-                    rayColors[colorIdx + 3] = 0.2;
-                    rayColors[colorIdx + 4] = 0.2;
-                    rayColors[colorIdx + 5] = 0.2;
+                    // Hide whisker when no hit
+                    cylinder.visible = false;
                 }
             }
 
-            // Update depth bars in scene2
-            if (egoDepthBars && egoDepthBars.children[idx]) {
-                const bar = egoDepthBars.children[idx];
-                // Height represents closeness (inverse of distance)
-                const normalizedDist = distance / egoConfig.maxRange;
-                const barHeight = Math.max(0.05, (1 - normalizedDist) * 2);
+            // Update point cloud for viewport2 - points in agent-relative space
+            if (pointPositions) {
+                const ptIdx = idx * 3;
+                if (hit && hitPoint) {
+                    // Transform hit point to agent-local coordinates
+                    // Use world Y (not relative to agent) so points stay above floor plane
+                    const relX = hitPoint.x - agentPos.x;
+                    const relY = hitPoint.y;  // Keep world Y so floor stays at 0
+                    const relZ = hitPoint.z - agentPos.z;
 
-                bar.geometry.dispose();
-                bar.geometry = new THREE.BoxGeometry(0.25, barHeight, 0.25);
-                bar.position.y = barHeight / 2;
+                    // Rotate back by agent rotation to get consistent forward view
+                    const cosR = Math.cos(-agentRot);
+                    const sinR = Math.sin(-agentRot);
 
-                // Color: white = close, black = far
-                const brightness = 1 - normalizedDist;
-                bar.material.color.setRGB(brightness, brightness, brightness);
-                bar.material.emissive.setRGB(brightness * 0.3, brightness * 0.3, brightness * 0.3);
+                    pointPositions[ptIdx] = relX * cosR - relZ * sinR;
+                    pointPositions[ptIdx + 1] = relY;
+                    pointPositions[ptIdx + 2] = relX * sinR + relZ * cosR;
+
+                    // Color based on distance with brightness multiplier
+                    const baseBrightness = 1 - (distance / egoConfig.maxRange);
+                    const brightness = Math.min(1, baseBrightness * egoConfig.brightnessMultiplier);
+                    pointColors[ptIdx] = brightness;
+                    pointColors[ptIdx + 1] = brightness;
+                    pointColors[ptIdx + 2] = brightness;
+                } else {
+                    // No hit - hide point far away
+                    pointPositions[ptIdx] = 0;
+                    pointPositions[ptIdx + 1] = -100;
+                    pointPositions[ptIdx + 2] = 0;
+                }
             }
         }
     }
 
-    if (egoRayHelper) {
-        egoRayHelper.geometry.attributes.position.needsUpdate = true;
-        egoRayHelper.geometry.attributes.color.needsUpdate = true;
+    if (egoPointCloud) {
+        egoPointCloud.geometry.attributes.position.needsUpdate = true;
+        egoPointCloud.geometry.attributes.color.needsUpdate = true;
     }
+
+    // Update viewport2 camera to look at point cloud from behind agent perspective
+    updateEgoViewportCamera();
 
     document.getElementById('detected-count').textContent = hitCount;
     const minDistEl = document.getElementById('min-distance');
@@ -425,27 +525,92 @@ function updateEgoSensor() {
     }
 
     updateTensorDisplay();
+
+    // Log tensor output for debugging (only occasionally to avoid spam)
+    if (Math.random() < 0.05) { // Log ~5% of frames
+        console.log('Ego Tensor [' + egoConfig.vBins + 'x' + egoConfig.hBins + '] (normalized distances):');
+        let tensorStr = '';
+        for (let v = 0; v < egoConfig.vBins; v++) {
+            let row = '';
+            for (let h = 0; h < egoConfig.hBins; h++) {
+                const val = egoTensorData[v * egoConfig.hBins + h];
+                row += val.toFixed(2).padStart(5) + ' ';
+            }
+            tensorStr += row + '\n';
+        }
+        console.log(tensorStr);
+    }
 }
 
 function updateTensorDisplay() {
     if (!egoTensorCells || !egoTensorData) return;
 
+    const expectedCells = egoConfig.vBins * egoConfig.hBins;
+    if (egoTensorCells.length !== expectedCells) {
+        // Tensor size mismatch - recreate display
+        createTensorDisplay();
+        return;
+    }
+
     for (let i = 0; i < egoTensorCells.length && i < egoTensorData.length; i++) {
         const cell = egoTensorCells[i];
         const normalizedDist = egoTensorData[i];
 
-        // Black to white gradient (close = white, far = black)
-        const brightness = Math.round((1 - normalizedDist) * 255);
-        cell.style.backgroundColor = `rgb(${brightness}, ${brightness}, ${brightness})`;
+        // Close = bright yellow/white, far = dark blue (not pure black)
+        const baseBrightness = 1 - normalizedDist;
+        const brightness = Math.min(1, baseBrightness * egoConfig.brightnessMultiplier);
+
+        // Use color gradient: bright hits are yellow-white, far/no-hit is dark blue
+        const r = Math.round(brightness * 255);
+        const g = Math.round(brightness * 255);
+        const b = Math.round(30 + brightness * 225); // min 30 so "no hit" shows as dark blue
+        cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
     }
 }
+
+// Reusable raycaster for ground projection
+const groundRaycaster = new THREE.Raycaster();
+const groundRayOrigin = new THREE.Vector3();
+const groundRayDir = new THREE.Vector3(0, -1, 0);
 
 function moveAgent(deltaX, deltaZ) {
     if (!egoAgentMarker) return;
     egoAgentMarker.position.x += deltaX;
     egoAgentMarker.position.z += deltaZ;
-    egoAgentMarker.position.x = Math.max(-GRID_RANGE + 0.3, Math.min(GRID_RANGE - 0.3, egoAgentMarker.position.x));
-    egoAgentMarker.position.z = Math.max(-GRID_RANGE + 0.3, Math.min(GRID_RANGE - 0.3, egoAgentMarker.position.z));
+    // Use larger bounds for ego mode
+    const range = EGO_FLOOR_RANGE;
+    egoAgentMarker.position.x = Math.max(-range + 0.3, Math.min(range - 0.3, egoAgentMarker.position.x));
+    egoAgentMarker.position.z = Math.max(-range + 0.3, Math.min(range - 0.3, egoAgentMarker.position.z));
+
+    // Project agent onto geometry below
+    projectAgentToGround();
+}
+
+function projectAgentToGround() {
+    if (!egoAgentMarker) return;
+    const state = window.appState;
+
+    // Raycast from high above agent position downward
+    groundRayOrigin.set(egoAgentMarker.position.x, 50, egoAgentMarker.position.z);
+    groundRaycaster.set(groundRayOrigin, groundRayDir);
+    groundRaycaster.far = 100;
+
+    // Raycast against geometry and floor
+    const targetObjects = [];
+    if (state.cube && state.cube.visible) {
+        targetObjects.push(state.cube);
+    }
+    if (state.floor) {
+        targetObjects.push(state.floor);
+    }
+
+    if (targetObjects.length > 0) {
+        const intersects = groundRaycaster.intersectObjects(targetObjects, true);
+        if (intersects.length > 0) {
+            // Place agent on top of the highest surface at this XZ position
+            egoAgentMarker.position.y = intersects[0].point.y;
+        }
+    }
 }
 
 function rotateAgent(deltaAngle) {
@@ -454,13 +619,13 @@ function rotateAgent(deltaAngle) {
 }
 
 function updateEgoViewportCamera() {
+    // Sync camera2 with main camera (same position/rotation)
     const state = window.appState;
-    if (!state.camera2 || !egoDepthBars) return;
+    if (!state.camera2 || !state.camera) return;
 
-    // Position camera to look at depth bars from above-front
-    state.camera2.position.set(0, 4, 5);
-    state.camera2.lookAt(0, 0, 0);
-    state.camera2.fov = 50;
+    state.camera2.position.copy(state.camera.position);
+    state.camera2.quaternion.copy(state.camera.quaternion);
+    state.camera2.fov = state.camera.fov;
     state.camera2.updateProjectionMatrix();
 }
 

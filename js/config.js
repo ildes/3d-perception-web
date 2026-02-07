@@ -2,7 +2,8 @@
 
 // Default values - can be changed at runtime
 const DEFAULT_GRID_SIZE = 8;
-const GRID_RANGE = 2;
+const GRID_RANGE = 3; // Reduced from 6 to 3
+const EGO_FLOOR_RANGE = 30; // 10x larger floor for ego-centric mode
 
 // These will be computed based on current grid size
 let GRID_SIZE = DEFAULT_GRID_SIZE;

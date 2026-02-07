@@ -19,7 +19,7 @@ function zoomCamera(delta) {
     const state = window.appState;
     const zoomFactor = 1 + delta * 0.001;
     state.camera.position.multiplyScalar(zoomFactor);
-    state.camera.position.clampLength(2, 15);
+    state.camera.position.clampLength(2, 40); // Extended range for larger floor
 
     state.camera2.position.copy(state.camera.position);
     state.camera2.lookAt(0, 0, 0);
@@ -51,15 +51,15 @@ function onMouseMove2(event) {
     if (state.sensorMode === 'ego') {
         if (state.isRotatingAgent) {
             // Rotate agent with shift+drag or right-click drag
-            rotateAgent(-deltaX * 0.01);
+            rotateAgent(-deltaX * 0.015);
         } else {
             // Move agent in ego mode
-            moveAgent(deltaY * 0.01, -deltaX * 0.01);
+            moveAgent(deltaY * 0.015, -deltaX * 0.015);
         }
     } else {
         // Move object in grid mode
-        state.cube.position.x += deltaY * 0.01;
-        state.cube.position.z -= deltaX * 0.01;
+        state.cube.position.x += deltaY * 0.015;
+        state.cube.position.z -= deltaX * 0.015;
         state.cube.position.x = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.x));
         state.cube.position.z = Math.max(-GRID_RANGE + 0.5, Math.min(GRID_RANGE - 0.5, state.cube.position.z));
     }

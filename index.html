@@ -27,15 +27,30 @@
             </div>
             <div class="control-group">
                 <label class="control-label">GEOMETRY TYPE</label>
+                <div class="spin-toggle">
+                    <input type="checkbox" id="spin-checkbox">
+                    <label for="spin-checkbox">Spin</label>
+                </div>
                 <select id="geometry-select">
+                    <option value="empty">Empty Scene</option>
                     <option value="cube">Cube</option>
                     <option value="sphere">Sphere</option>
                     <option value="cylinder">Cylinder</option>
                     <option value="cone">Cone</option>
                     <option value="torus">Torus</option>
                     <option value="wall">Wall</option>
+                    <option value="tallwall">Giant Tall Wall</option>
                     <option value="chair">Chair</option>
                     <option value="stairs">Stairs</option>
+                    <optgroup label="Isaac Gym Terrains">
+                        <option value="pyramid-stairs">Pyramid Stairs</option>
+                        <option value="rough-terrain">Rough Terrain</option>
+                        <option value="stepping-stones">Stepping Stones</option>
+                    </optgroup>
+                    <optgroup label="Interior Spaces">
+                        <option value="interior-room">Room w/ Table</option>
+                        <option value="corridor">Corridor</option>
+                    </optgroup>
                 </select>
             </div>
             <div class="sensor-grid" id="sensor-grid"></div>
@@ -56,18 +71,23 @@
                 <h2>Ego Configuration</h2>
                 <div class="control-group">
                     <label class="control-label">H-BINS</label>
-                    <input type="range" id="ego-h-bins" min="8" max="32" value="16" step="4">
-                    <span class="range-value" id="ego-h-value">16</span>
+                    <input type="range" id="ego-h-bins" min="8" max="64" value="32" step="4">
+                    <span class="range-value" id="ego-h-value">32</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">V-BINS</label>
-                    <input type="range" id="ego-v-bins" min="4" max="16" value="8" step="2">
-                    <span class="range-value" id="ego-v-value">8</span>
+                    <input type="range" id="ego-v-bins" min="4" max="32" value="16" step="2">
+                    <span class="range-value" id="ego-v-value">16</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">RANGE (m)</label>
-                    <input type="range" id="ego-range" min="0.5" max="10" value="5" step="0.5">
-                    <span class="range-value" id="ego-range-value">5</span>
+                    <input type="range" id="ego-range" min="0.1" max="20" value="20" step="0.1">
+                    <span class="range-value" id="ego-range-value">20</span>
+                </div>
+                <div class="control-group">
+                    <label class="control-label">BRIGHTNESS</label>
+                    <input type="range" id="ego-brightness" min="0.5" max="5" value="2" step="0.1">
+                    <span class="range-value" id="ego-brightness-value">2.0</span>
                 </div>
                 <h2>Distance Tensor</h2>
                 <div class="ego-tensor-display" id="ego-tensor-display"></div>

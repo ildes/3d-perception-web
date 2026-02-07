@@ -109,6 +109,26 @@ body {
     letter-spacing: 0.05em;
 }
 
+.spin-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5em;
+    margin-bottom: 0.5em;
+}
+
+.spin-toggle input[type="checkbox"] {
+    width: 1.25em;
+    height: 1.25em;
+    accent-color: var(--color-success);
+    cursor: pointer;
+}
+
+.spin-toggle label {
+    color: var(--color-text);
+    font-size: 0.875em;
+    cursor: pointer;
+}
+
 #geometry-select {
     width: 100%;
     background: #21262d;
@@ -126,36 +146,46 @@ body {
     border-color: var(--color-accent);
 }
 
+#geometry-select optgroup {
+    background: #161b22;
+    color: var(--color-accent);
+    font-weight: bold;
+    font-style: normal;
+}
+
+#geometry-select option {
+    background: #21262d;
+    color: var(--color-text);
+    padding: 0.5em;
+}
+
 /* Sensor Grid (top-down mode) */
 .sensor-grid {
     display: grid;
     grid-template-columns: repeat(8, 1fr);
-    gap: 3px;
+    gap: 0;
     margin-bottom: 1.25em;
     background: var(--color-panel);
-    padding: 0.5em;
-    border-radius: 4px;
-    border: 1px solid var(--color-border);
+    padding: 0;
+    border-radius: 0;
+    border: none;
 }
 
 .sensor-cell {
     aspect-ratio: 1;
     background: #21262d;
-    border: 1px solid var(--color-border);
+    border: none;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 0.625em;
     color: var(--color-text-dim);
-    transition: all 0.2s;
-    border-radius: 2px;
+    border-radius: 0;
 }
 
 .sensor-cell.active {
-    background: var(--color-success);
-    border-color: #2ea043;
+    background: var(--color-accent2);
     color: #fff;
-    box-shadow: 0 0 8px rgba(46, 160, 67, 0.5);
 }
 
 /* Grid Selector Container */
@@ -387,16 +417,18 @@ canvas {
 
 .ego-tensor-grid {
     display: grid;
-    gap: 1px;
+    gap: 0;
     width: 100%;
+    background: #0a0a15;
+    transform: scaleY(-1);
 }
 
 .ego-tensor-cell {
     aspect-ratio: 1;
-    min-width: 4px;
-    min-height: 4px;
-    border-radius: 1px;
-    transition: background 0.05s;
+    min-width: 2px;
+    min-height: 2px;
+    border-radius: 0;
+    background: #1a1a2a;
 }
 
 .tensor-axis-label {
