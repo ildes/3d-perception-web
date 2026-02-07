@@ -7,20 +7,25 @@ Vanilla JavaScript/HTML visualization using Three.js (r128) for 3D rendering. De
 
 ```
 grid/
-├── index.html          # Main HTML, UI controls, script loading order
-├── css/styles.css      # All styling, dark theme, tensor display grid
+├── index.html              # Main HTML, UI controls, script loading order
+├── css/styles.css          # All styling, dark theme, tensor display grid
 ├── js/
-│   ├── config.js       # Constants: GRID_RANGE=3, EGO_FLOOR_RANGE=30, DEFAULT_GRID_SIZE=8
-│   ├── state.js        # Global window.appState object
-│   ├── scene.js        # Three.js setup, ALL geometry creation functions
-│   ├── sensors.js      # Grid mode sensor (top-down heightmap)
-│   ├── ui.js           # UI components for grid mode
-│   ├── grid-selector.js # Grid size selector UI
-│   ├── controls.js     # Mouse/camera controls for both viewports
-│   ├── ego-sensor.js   # Ego-centric mode: raycasting, whiskers, point cloud, agent movement
-│   └── main.js         # Entry point: init(), animate() loop
-├── test_heightmap.js   # Playwright test
-└── AGENTS.md           # This file
+│   ├── config.js           # Constants: GRID_RANGE=3, EGO_FLOOR_RANGE=30, DEFAULT_GRID_SIZE=8
+│   ├── state.js            # Global window.appState object
+│   ├── scene-core.js       # Three.js scene setup (cameras, lights, renderers)
+│   ├── geometries.js       # ALL geometry creation functions (449 lines)
+│   ├── sensors.js          # Grid mode sensor (top-down heightmap)
+│   ├── ui.js               # UI components for grid mode
+│   ├── grid-selector.js    # Grid size selector UI
+│   ├── controls.js         # Mouse/camera controls for both viewports
+│   ├── ego-config.js       # Ego sensor configuration and state (28 lines)
+│   ├── ego-visualization.js # Agent markers, whiskers, point cloud, tensor display (187 lines)
+│   ├── ego-ui.js           # Mode switching and UI management (135 lines)
+│   ├── ego-core.js         # Main update loop and raycasting (178 lines)
+│   ├── ego-agent.js        # Agent movement and rotation (59 lines)
+│   └── main.js             # Entry point: init(), animate() loop
+├── test_heightmap.js       # Playwright test
+└── AGENTS.md               # This file
 ```
 
 ## Sensor Modes
@@ -32,9 +37,10 @@ grid/
 - UI: Packed grid display (no gaps/margins) with horizontal flip to match 3D view
 - Use case: Understanding terrain/obstacles from bird's eye view
 
-### Ego-Centric Mode
+### Ego-Centric Mode (Default)
 - Spherical raycasting from agent's perspective at `agentHeight` (1.0m)
 - Output: `[V_BINS × H_BINS]` tensor of normalized distances (0=close, 1=far/max range)
+- **Default config**: 64×32 bins, 5m range, 1.5 brightness
 - Vertical FOV: -60° (down) to +30° (up)
 - Horizontal FOV: Full 360° (cylinder unwrap: center=forward, edges=back)
 - Whisker visualization: Only shows tips near hit points (shorter=closer, longer=farther)
@@ -52,7 +58,14 @@ DEFAULT_GRID_SIZE = 8;
 updateGridConfig(newSize)  // Updates grid dimensions
 ```
 
-### scene.js - Geometry Creation
+### scene-core.js - Scene Setup
+```javascript
+initMainScene(container, w, h)   // Setup left viewport (3D scene)
+initSensorScene(container, w, h) // Setup right viewport (sensor view)
+onGeometryChange(event)          // Geometry select handler
+```
+
+### geometries.js - Geometry Creation
 ```javascript
 createGeometry(type, scene)     // Main dispatcher, handles disposal
 createPyramidStairs(material)   // Isaac Gym style concentric stairs
@@ -66,27 +79,49 @@ createWall(material)            // Simple wall
 createTallWall(material)        // Giant wall
 ```
 
-### ego-sensor.js - Ego Mode Core
+### ego-config.js - Configuration
 ```javascript
 egoConfig = {
-    hBins: 32,              // Horizontal bins (8-64)
-    vBins: 16,              // Vertical bins (4-32)
-    maxRange: 20,           // Max raycast distance
+    hBins: 64,              // Horizontal bins (8-64)
+    vBins: 32,              // Vertical bins (4-32)
+    maxRange: 5,            // Max raycast distance
     vAngleMin: -60,         // Look down angle
     vAngleMax: 30,          // Look up angle
     agentHeight: 1.0,       // Sensor origin height
-    brightnessMultiplier: 2.0
+    brightnessMultiplier: 1.5
 };
+```
 
+### ego-core.js - Sensor Loop
+```javascript
 initEgoSensor()             // Setup tensor, UI, markers, whiskers, point cloud
+reinitEgoSensor()           // Recreate sensor when bins change
+updateEgoSensor()           // Main update: raycasting, whiskers, point cloud, tensor
+```
+
+### ego-ui.js - Mode Management
+```javascript
 setActiveMode(mode)         // Switch 'grid'/'ego', resizes floor
 resizeFloorForMode(mode)    // Swaps floor geometry and grid helper
-updateEgoSensor()           // Main update: raycasting, whiskers, point cloud, tensor
+updateTensorShapeDisplay()  // Update tensor shape UI
+```
+
+### ego-visualization.js - Visual Elements
+```javascript
+createAgentMarker()         // Ground ring, arrow, sensor indicator
+createEgoRayVisualization() // Whisker cylinders for ray hits
+createEgoPointCloud()       // Point cloud for viewport2
+createTensorDisplay()       // Build HTML grid for tensor visualization
+updateTensorDisplay()       // Color cells by distance (yellow=close, blue=far)
+getEgoRayDirection(v, h)    // Calculate ray direction for bin
+```
+
+### ego-agent.js - Agent Control
+```javascript
 moveAgent(deltaX, deltaZ)   // Move agent with ground projection
 projectAgentToGround()      // Raycast down to place agent on geometry
 rotateAgent(deltaAngle)     // Rotate agent heading
-createTensorDisplay()       // Build HTML grid for tensor visualization
-updateTensorDisplay()       // Color cells by distance (yellow=close, blue=far)
+updateEgoViewportCamera()   // Sync camera2 with main camera
 ```
 
 ### controls.js - Input Handling
@@ -164,7 +199,26 @@ python3 -m http.server 8080     # Serve locally
 | Right (Sensor) | Scroll | Zoom |
 
 ## Adding New Geometry
-1. Add case to `createGeometry()` switch in `scene.js`
+1. Add case to `createGeometry()` switch in `geometries.js`
 2. Create `createYourGeometry(material)` function returning THREE.Mesh or THREE.Group
 3. Add `<option value="your-geometry">Label</option>` to `#geometry-select` in `index.html`
 4. For terrain groups, use `optgroup` for organization
+
+## Script Loading Order (index.html)
+Scripts must load in dependency order:
+```html
+<script src="js/config.js"></script>
+<script src="js/state.js"></script>
+<script src="js/geometries.js"></script>    <!-- createGeometry() used by scene-core -->
+<script src="js/scene-core.js"></script>    <!-- Depends on geometries -->
+<script src="js/sensors.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/grid-selector.js"></script>
+<script src="js/controls.js"></script>
+<script src="js/ego-config.js"></script>    <!-- Must load before ego-* modules -->
+<script src="js/ego-visualization.js"></script>  <!-- Uses egoConfig -->
+<script src="js/ego-ui.js"></script>        <!-- Uses egoConfig -->
+<script src="js/ego-core.js"></script>      <!-- Uses visualization functions -->
+<script src="js/ego-agent.js"></script>
+<script src="js/main.js"></script>          <!-- Entry point, uses all above -->
+```
