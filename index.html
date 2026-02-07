@@ -45,10 +45,10 @@
                     <div class="grid-selector-cells" id="grid-selector-cells"></div>
                     <div class="grid-selector-preview" id="grid-selector-preview">8 × 8</div>
                 </div>
-                <input type="range" id="grid-size-slider" min="4" max="16" value="8" step="2">
+                <input type="range" id="grid-size-slider" min="4" max="32" value="8" step="2">
                 <div class="grid-size-labels">
                     <span>4</span>
-                    <span>16</span>
+                    <span>32</span>
                 </div>
             </div>
             <!-- Ego-centric config (hidden by default) -->
@@ -66,7 +66,7 @@
                 </div>
                 <div class="control-group">
                     <label class="control-label">RANGE (m)</label>
-                    <input type="range" id="ego-range" min="2" max="10" value="5" step="1">
+                    <input type="range" id="ego-range" min="0.5" max="10" value="5" step="0.5">
                     <span class="range-value" id="ego-range-value">5</span>
                 </div>
                 <h2>Distance Tensor</h2>

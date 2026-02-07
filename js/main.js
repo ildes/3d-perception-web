@@ -73,7 +73,6 @@ function animate() {
     // Update appropriate sensor based on mode
     if (state.sensorMode === 'ego') {
         updateEgoSensor();
-        updateFirstPersonCamera();
     } else {
         updateSensorData();
     }
@@ -83,16 +82,10 @@ function animate() {
         state.renderer.render(state.scene, state.camera);
     }
 
-    // Render second viewport
-    if (state.renderer2 && state.camera2) {
+    // Render second viewport - always render scene2 (height bars or ego depth bars)
+    if (state.renderer2 && state.scene2 && state.camera2) {
         state.renderer2.clear();
-        if (state.sensorMode === 'ego') {
-            // In ego mode, render main scene from first-person view
-            state.renderer2.render(state.scene, state.camera2);
-        } else {
-            // In grid mode, render height bars scene
-            state.renderer2.render(state.scene2, state.camera2);
-        }
+        state.renderer2.render(state.scene2, state.camera2);
     }
 }
 
