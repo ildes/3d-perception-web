@@ -1,0 +1,130 @@
+/* Grid Mode Styles */
+
+/* Sensor Grid (top-down mode) */
+.sensor-grid {
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 0;
+    margin-bottom: 1.25em;
+    background: var(--color-panel);
+    padding: 0;
+    border-radius: 0;
+    border: none;
+}
+
+.sensor-cell {
+    aspect-ratio: 1;
+    background: #21262d;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.625em;
+    color: var(--color-text-dim);
+    border-radius: 0;
+}
+
+.sensor-cell.active {
+    background: var(--color-accent2);
+    color: #fff;
+}
+
+/* Grid Selector Container */
+.grid-selector-container {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 1.25em;
+    padding: 1em;
+    background: var(--color-panel);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+}
+
+.grid-selector-container h2 {
+    font-size: 0.875em !important;
+    margin-bottom: 0.75em !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+}
+
+.grid-selector {
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 0.75em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    min-height: 160px;
+}
+
+.grid-selector-cells {
+    display: grid;
+    gap: 1px;
+    transition: all 0.3s ease;
+}
+
+.grid-selector-cell {
+    background: #21262d;
+    border: 1px solid #30363d;
+    transition: all 0.15s;
+    min-width: 6px;
+    min-height: 6px;
+}
+
+.grid-selector-cell.active {
+    background: var(--color-success);
+    border-color: #2ea043;
+}
+
+.grid-selector-preview {
+    position: absolute;
+    top: 0.5em;
+    right: 0.5em;
+    background: rgba(13, 17, 23, 0.95);
+    color: var(--color-accent);
+    padding: 0.25em 0.5em;
+    border-radius: 3px;
+    font-size: 0.875em;
+    font-weight: bold;
+    border: 1px solid var(--color-border);
+}
+
+#grid-size-slider {
+    width: 100%;
+    margin-top: 0.75em;
+    -webkit-appearance: none;
+    height: 6px;
+    background: var(--color-border);
+    border-radius: 3px;
+    outline: none;
+}
+
+#grid-size-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    background: var(--color-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--color-panel);
+}
+
+#grid-size-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    background: var(--color-accent);
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid var(--color-panel);
+}
+
+.grid-size-labels {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.5em;
+    font-size: 0.875em;
+    color: var(--color-text-dim);
+}

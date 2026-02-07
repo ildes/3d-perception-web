@@ -1,0 +1,47 @@
+/* Ego Tensor Heatmap Display */
+.ego-tensor-display {
+    margin-top: 1em;
+    background: var(--color-bg);
+    border: 1px solid var(--color-border);
+    border-radius: 4px;
+    padding: 1.5em 0.5em 0.5em 1.5em;
+    position: relative;
+}
+
+.ego-tensor-grid {
+    display: grid;
+    gap: 0;
+    width: 100%;
+    background: #0a0a15;
+    transform: scaleY(-1) scaleX(-1);
+}
+
+.ego-tensor-cell {
+    aspect-ratio: 1;
+    min-width: 2px;
+    min-height: 2px;
+    border-radius: 0;
+    background: #1a1a2a;
+}
+
+.tensor-axis-label {
+    position: absolute;
+    font-size: 0.75em;
+    font-weight: bold;
+    color: var(--color-accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.tensor-axis-label.top {
+    top: 0.4em;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+.tensor-axis-label.left {
+    left: 0.3em;
+    top: 50%;
+    transform: translateY(-50%) rotate(-90deg);
+    transform-origin: center;
+}
