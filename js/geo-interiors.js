@@ -63,6 +63,15 @@ function createInteriorRoom(material) {
     header.position.set(0, doorHeight + (wallHeight - doorHeight)/2, roomSize/2);
     group.add(header);
 
+    const roof = new THREE.Mesh(
+        new THREE.BoxGeometry(roomSize, wallThickness, roomSize),
+        wallMat
+    );
+    roof.position.y = wallHeight + wallThickness / 2;
+    roof.visible = false;
+    roof.userData.isInvisibleRaycastSurface = true;
+    group.add(roof);
+
     const tableMat = material.clone();
     tableMat.color.setHex(0x6b4423);
     const tableTop = new THREE.Mesh(

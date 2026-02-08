@@ -25,14 +25,18 @@ function projectAgentToGround() {
 
     const targetObjects = [];
     if (state.cube && state.cube.visible) {
-        targetObjects.push(state.cube);
+        state.cube.traverse(child => {
+            if (child.isMesh && !child.userData.isInvisibleRaycastSurface) {
+                targetObjects.push(child);
+            }
+        });
     }
     if (state.floor) {
         targetObjects.push(state.floor);
     }
 
     if (targetObjects.length > 0) {
-        const intersects = groundRaycaster.intersectObjects(targetObjects, true);
+        const intersects = groundRaycaster.intersectObjects(targetObjects, false);
         if (intersects.length > 0) {
             egoAgentMarker.position.y = intersects[0].point.y;
         }

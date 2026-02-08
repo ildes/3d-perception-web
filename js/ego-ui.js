@@ -5,6 +5,20 @@ function setupEgoUI() {
     const vSlider = document.getElementById('ego-v-bins');
     const rangeSlider = document.getElementById('ego-range');
     
+    // Sync sliders with config values
+    if (hSlider) {
+        hSlider.value = egoConfig.hBins;
+        document.getElementById('ego-h-value').textContent = egoConfig.hBins;
+    }
+    if (vSlider) {
+        vSlider.value = egoConfig.vBins;
+        document.getElementById('ego-v-value').textContent = egoConfig.vBins;
+    }
+    if (rangeSlider) {
+        rangeSlider.value = egoConfig.maxRange;
+        document.getElementById('ego-range-value').textContent = egoConfig.maxRange;
+    }
+    
     // Initialize up angle slider
     const upAngleSlider = document.getElementById('ego-up-angle');
     if (upAngleSlider) {
@@ -59,9 +73,20 @@ function setupEgoUI() {
     // Initialize scaling mode dropdown
     const scalingModeSelect = document.getElementById('ego-scaling-mode');
     if (scalingModeSelect) {
-        scalingModeSelect.value = egoConfig.scalingMode || 'none';
+        scalingModeSelect.value = egoConfig.scalingMode || 'minmax';
         scalingModeSelect.addEventListener('change', (e) => {
             egoConfig.scalingMode = e.target.value;
+        });
+    }
+
+    // Whisker visibility toggle
+    const whiskerToggle = document.getElementById('show-whiskers');
+    if (whiskerToggle) {
+        whiskerToggle.checked = true;
+        whiskerToggle.addEventListener('change', (e) => {
+            if (egoRayHelper) {
+                egoRayHelper.visible = e.target.checked;
+            }
         });
     }
 

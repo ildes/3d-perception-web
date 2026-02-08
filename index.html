@@ -17,6 +17,9 @@
             </div>
             <div id="viewport2">
                 <div class="viewport-label">SENSOR DATA</div>
+                <div class="viewport-tensor-container">
+                    <div class="ego-tensor-display" id="ego-tensor-display"></div>
+                </div>
             </div>
         </div>
         <div id="info-panel">
@@ -74,13 +77,13 @@
                 <h2>Ego Configuration</h2>
                 <div class="control-group">
                     <label class="control-label">H-BINS</label>
-                    <input type="range" id="ego-h-bins" min="8" max="256" value="96" step="4">
-                    <span class="range-value" id="ego-h-value">96</span>
+                    <input type="range" id="ego-h-bins" min="8" max="128" value="64" step="4">
+                    <span class="range-value" id="ego-h-value">64</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">V-BINS</label>
-                    <input type="range" id="ego-v-bins" min="4" max="128" value="32" step="2">
-                    <span class="range-value" id="ego-v-value">32</span>
+                    <input type="range" id="ego-v-bins" min="4" max="64" value="21" step="1">
+                    <span class="range-value" id="ego-v-value">21</span>
                 </div>
                 <div class="control-group">
                     <label class="control-label">RANGE (m)</label>
@@ -112,12 +115,17 @@
                     <select id="ego-scaling-mode">
                         <option value="none">None (raw)</option>
                         <option value="normalize">Normalize (0-1)</option>
-                        <option value="equalize" selected>Histogram Equalization</option>
-                        <option value="minmax">Min-Max</option>
+                        <option value="equalize">Histogram Equalization</option>
+                        <option value="minmax" selected>Min-Max</option>
                     </select>
                 </div>
-                <h2>Distance Tensor</h2>
-                <div class="ego-tensor-display" id="ego-tensor-display"></div>
+                <div class="control-group">
+                    <label class="control-label">VISUALIZATION</label>
+                    <div class="spin-toggle">
+                        <input type="checkbox" id="show-whiskers" checked>
+                        <label for="show-whiskers">Show Whiskers</label>
+                    </div>
+                </div>
             </div>
             <div class="stats">
                 <div class="stat-row" id="stat-grid-size">

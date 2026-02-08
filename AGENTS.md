@@ -48,14 +48,16 @@ grid/
 ### Ego-Centric Mode (Default)
 - Spherical raycasting from agent's perspective at `agentHeight` (1.0m)
 - Output: `[V_BINS × H_BINS]` tensor of normalized distances (0=close, 1=far/max range)
-- **Default config**: 96×32 bins, 10m range, 1.0 brightness, histogram equalization
+- **Default config**: 64×21 bins, 10m range, 1.0 brightness, min-max scaling
 - Vertical FOV: Separate sliders for up (+30°) and down (-60°) angles
 - Horizontal FOV: Slider 0°-360° (360°=full sphere, 180°=forward hemisphere)
-- Data Scaling: None (raw), Normalize (0-1), Histogram Equalization, Min-Max
+- Data Scaling: None (raw), Normalize (0-1), Histogram Equalization, Min-Max (default)
 - Whisker visualization: Only shows tips near hit points (shorter=closer, longer=farther)
+- Whisker toggle: Checkbox to show/hide whiskers for performance
 - Yellow cone appears on FOV adjustment, fades out over 4 seconds
 - Agent projects onto geometry (walks on top of stairs, tables, etc.)
 - Floor size: 60×60 units in ego mode (10x larger than grid mode)
+- Tensor display: HTML5 Canvas-based pixel rendering (no DOM divs)
 - Use case: First-person spatial understanding for RL training
 
 ## Key Functions by File
@@ -92,15 +94,15 @@ createRoughTerrain(material)    // Random elevation bumps (smoothed)
 createSteppingStones(material)  // Irregular platforms with gaps
 
 // geo-interiors.js
-createInteriorRoom(material)    // Room with walls, door, table
+createInteriorRoom(material)    // Room with walls, door, table, invisible roof for raycasting
 createCorridor(material)        // Long hallway with obstacles
 ```
 
 ### ego-config.js - Configuration
 ```javascript
 egoConfig = {
-    hBins: 96,              // Horizontal bins (8-256)
-    vBins: 32,              // Vertical bins (4-128)
+    hBins: 64,              // Horizontal bins (8-128)
+    vBins: 21,              // Vertical bins (4-64)
     maxRange: 10,           // Max raycast distance (1-20m, integer)
     vAngleMin: -60,         // Look down angle
     vAngleMax: 30,          // Look up angle
@@ -108,7 +110,7 @@ egoConfig = {
     hAngleMax: 180,         // Horizontal FOV max
     agentHeight: 1.0,       // Sensor origin height
     brightnessMultiplier: 1.0,
-    scalingMode: 'equalize' // 'none' | 'normalize' | 'equalize' | 'minmax'
+    scalingMode: 'minmax'   // 'none' | 'normalize' | 'equalize' | 'minmax'
 };
 ```
 
@@ -124,6 +126,7 @@ updateEgoSensor()           // Main update: raycasting, whiskers, point cloud, t
 setActiveMode(mode)         // Switch 'grid'/'ego', resizes floor
 resizeFloorForMode(mode)    // Swaps floor geometry and grid helper
 updateTensorShapeDisplay()  // Update tensor shape UI
+setupEgoUI()                // Initialize UI controls and sync with config
 ```
 
 ### ego-visualization.js - Visual Elements
@@ -131,8 +134,8 @@ updateTensorShapeDisplay()  // Update tensor shape UI
 createAgentMarker()         // Ground ring, arrow, sensor indicator
 createEgoRayVisualization() // Whisker cylinders for ray hits
 createEgoPointCloud()       // Point cloud for viewport2
-createTensorDisplay()       // Build HTML grid for tensor visualization
-updateTensorDisplay()       // Color cells by distance (yellow=close, blue=far)
+createTensorDisplay()       // Build HTML5 Canvas for tensor visualization
+updateTensorDisplay()       // Draw pixel data on canvas (yellow=close, blue=far)
 getEgoRayDirection(v, h)    // Calculate ray direction for bin
 ```
 
@@ -186,7 +189,6 @@ python3 -m http.server 8080     # Serve locally
 - Use kebab-case for IDs/classes
 - Color scheme: Dark theme (#0d1117, #21262d, #58a6ff)
 - Split into 4 files: styles-base.css, styles-grid.css, styles-ego.css, styles-tensor.css
-- Tensor grid uses `scaleY(-1) scaleX(-1)` to flip vertically and horizontally
 
 ## Global State (window.appState)
 ```javascript

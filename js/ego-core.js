@@ -7,6 +7,11 @@ function initEgoSensor() {
     createAgentMarker();
     createEgoRayVisualization();
     createEgoPointCloud();
+    
+    // Immediately run first sensor update to populate tensor data
+    if (window.appState.sensorMode === 'ego') {
+        updateEgoSensor();
+    }
 }
 
 function reinitEgoSensor() {
@@ -111,6 +116,8 @@ function updateEgoSensor() {
     }
     // 'none' mode keeps raw distances
 
+    const showWhiskers = document.getElementById('show-whiskers')?.checked ?? true;
+    
     for (let i = 0; i < distances.length; i++) {
         const { idx, distance, hit, hitPoint, rotatedDir } = distances[i];
         egoTensorData[idx] = scaledDistances[i];
@@ -119,7 +126,7 @@ function updateEgoSensor() {
         const pointPositions = egoPointCloud?.geometry.attributes.position.array;
         const pointColors = egoPointCloud?.geometry.attributes.color.array;
 
-            if (whiskers && whiskers[idx]) {
+            if (showWhiskers && whiskers && whiskers[idx]) {
                 const cylinder = whiskers[idx];
 
                 if (hit) {

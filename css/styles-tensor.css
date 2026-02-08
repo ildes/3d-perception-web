@@ -6,20 +6,23 @@
     border-radius: 4px;
     padding: 1.5em 0.5em 0.5em 1.5em;
     position: relative;
+    overflow: hidden;
 }
 
 .ego-tensor-grid {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     gap: 0;
-    width: 100%;
     background: #0a0a15;
-    transform: scaleY(-1) scaleX(-1);
+}
+
+.ego-tensor-row {
+    display: flex;
+    width: 100%;
 }
 
 .ego-tensor-cell {
-    aspect-ratio: 1;
-    min-width: 2px;
-    min-height: 2px;
+    flex-shrink: 0;
     border-radius: 0;
     background: #1a1a2a;
 }

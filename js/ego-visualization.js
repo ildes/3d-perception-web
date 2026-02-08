@@ -135,55 +135,76 @@ function getEgoRayDirection(vIndex, hIndex) {
     return { dir, vAngle, hAngle };
 }
 
+let egoTensorCanvas = null;
+let egoTensorCtx = null;
+
 function createTensorDisplay() {
     const container = document.getElementById('ego-tensor-display');
     if (!container) return;
 
     container.innerHTML = '';
+    container.style.backgroundColor = '#0a0a15';
 
     const totalCells = egoConfig.vBins * egoConfig.hBins;
-    console.log(`Creating tensor display: ${egoConfig.vBins}x${egoConfig.hBins} = ${totalCells} cells`);
+    console.log(`Creating tensor canvas: ${egoConfig.vBins}x${egoConfig.hBins} = ${totalCells} pixels`);
 
-    let html = `
-        <div class="tensor-axis-label top">Back ← | Front | → Back</div>
-        <div class="tensor-axis-label left">Down</div>
-        <div class="ego-tensor-grid" style="grid-template-columns: repeat(${egoConfig.hBins}, 1fr); grid-template-rows: repeat(${egoConfig.vBins}, 1fr);">
-    `;
+    const containerWidth = container.clientWidth - 32;
+    const aspectRatio = egoConfig.vBins / egoConfig.hBins;
+    const canvasHeight = Math.round(containerWidth * aspectRatio);
 
-    for (let v = egoConfig.vBins - 1; v >= 0; v--) {
-        for (let h = 0; h < egoConfig.hBins; h++) {
-            const idx = v * egoConfig.hBins + h;
-            html += `<div class="ego-tensor-cell" data-idx="${idx}"></div>`;
-        }
-    }
-
-    html += '</div>';
-    container.innerHTML = html;
-    egoTensorCells = container.querySelectorAll('.ego-tensor-cell');
-    console.log(`Created ${egoTensorCells.length} tensor cells`);
+    egoTensorCanvas = document.createElement('canvas');
+    egoTensorCanvas.width = egoConfig.hBins;
+    egoTensorCanvas.height = egoConfig.vBins;
+    egoTensorCanvas.style.width = '100%';
+    egoTensorCanvas.style.height = canvasHeight + 'px';
+    egoTensorCanvas.style.imageRendering = 'pixelated';
+    egoTensorCanvas.style.display = 'block';
+    
+    egoTensorCtx = egoTensorCanvas.getContext('2d');
+    
+    // Fill with default background color
+    egoTensorCtx.fillStyle = '#1a1a2a';
+    egoTensorCtx.fillRect(0, 0, egoConfig.hBins, egoConfig.vBins);
+    
+    container.appendChild(egoTensorCanvas);
+    console.log(`Created tensor canvas: ${egoConfig.hBins}x${egoConfig.vBins}`);
 }
 
 function updateTensorDisplay() {
-    if (!egoTensorCells || !egoTensorData) return;
+    if (!egoTensorData || !egoTensorCanvas) return;
 
-    const expectedCells = egoConfig.vBins * egoConfig.hBins;
-    if (egoTensorCells.length !== expectedCells) {
+    if (egoTensorCanvas.width !== egoConfig.hBins || egoTensorCanvas.height !== egoConfig.vBins) {
         createTensorDisplay();
         return;
     }
 
-    for (let i = 0; i < egoTensorCells.length && i < egoTensorData.length; i++) {
-        const cell = egoTensorCells[i];
-        const normalizedDist = egoTensorData[i];
-
-        const baseBrightness = 1 - normalizedDist;
-        const brightness = Math.min(1, baseBrightness * egoConfig.brightnessMultiplier);
-
-        const r = Math.round(brightness * 255);
-        const g = Math.round(brightness * 255);
-        const b = Math.round(30 + brightness * 225);
-        cell.style.backgroundColor = `rgb(${r}, ${g}, ${b})`;
+    if (!egoTensorCtx) return;
+    
+    const imgData = egoTensorCtx.createImageData(egoConfig.hBins, egoConfig.vBins);
+    const data = imgData.data;
+    
+    for (let v = 0; v < egoConfig.vBins; v++) {
+        for (let h = 0; h < egoConfig.hBins; h++) {
+            const dataIdx = v * egoConfig.hBins + h;
+            const normalizedDist = egoTensorData[dataIdx];
+            
+            const baseBrightness = 1 - normalizedDist;
+            const brightness = Math.min(1, baseBrightness * egoConfig.brightnessMultiplier);
+            const bw = Math.round(brightness * 255);
+            
+            // Canvas is flipped vertically and horizontally (180 rotation)
+            const canvasRow = (egoConfig.vBins - 1) - v;
+            const canvasCol = (egoConfig.hBins - 1) - h;
+            const pixelIdx = (canvasRow * egoConfig.hBins + canvasCol) * 4;
+            
+            data[pixelIdx] = bw;
+            data[pixelIdx + 1] = bw;
+            data[pixelIdx + 2] = bw;
+            data[pixelIdx + 3] = 255;
+        }
     }
+    
+    egoTensorCtx.putImageData(imgData, 0, 0);
 }
 
 

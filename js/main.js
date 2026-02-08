@@ -39,6 +39,9 @@ function init() {
 
     // Set initial mode to ego
     setActiveMode('ego');
+    
+    // Immediately populate sensor data to prevent uninitialized display
+    updateEgoSensor();
 
     // Attach canvases to viewports
     vp1.appendChild(mainScene.renderer.domElement);

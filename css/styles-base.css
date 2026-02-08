@@ -52,7 +52,35 @@ body {
     left: 50%;
     width: 50%;
     border-left: 2px solid var(--color-border);
+    display: flex;
+    flex-direction: column;
 }
+
+.viewport-tensor-container {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    line-height: 0;
+    z-index: 10;
+}
+
+.viewport-tensor-container .ego-tensor-display {
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+}
+
+.viewport-tensor-container .ego-tensor-grid {
+    background: none !important;
+}
+
+
+
+
+
+
 
 #viewport1 canvas, #viewport2 canvas {
     width: 100% !important;
