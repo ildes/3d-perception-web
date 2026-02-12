@@ -2,17 +2,12 @@
 
 function setupEgoUI() {
     const hSlider = document.getElementById('ego-h-bins');
-    const vSlider = document.getElementById('ego-v-bins');
     const rangeSlider = document.getElementById('ego-range');
-    
+
     // Sync sliders with config values
     if (hSlider) {
         hSlider.value = egoConfig.hBins;
         document.getElementById('ego-h-value').textContent = egoConfig.hBins;
-    }
-    if (vSlider) {
-        vSlider.value = egoConfig.vBins;
-        document.getElementById('ego-v-value').textContent = egoConfig.vBins;
     }
     if (rangeSlider) {
         rangeSlider.value = egoConfig.maxRange;
@@ -94,14 +89,7 @@ function setupEgoUI() {
         hSlider.addEventListener('input', (e) => {
             egoConfig.hBins = parseInt(e.target.value);
             document.getElementById('ego-h-value').textContent = egoConfig.hBins;
-            reinitEgoSensor();
-        });
-    }
-
-    if (vSlider) {
-        vSlider.addEventListener('input', (e) => {
-            egoConfig.vBins = parseInt(e.target.value);
-            document.getElementById('ego-v-value').textContent = egoConfig.vBins;
+            updateVBinsFromHBins();
             reinitEgoSensor();
         });
     }
@@ -216,10 +204,11 @@ function resizeFloorForMode(mode) {
 
 function updateTensorShapeDisplay() {
     const el = document.getElementById('tensor-shape-display');
-    if (el) el.textContent = `${egoConfig.vBins} × ${egoConfig.hBins} = ${egoConfig.vBins * egoConfig.hBins}`;
+    if (el) el.textContent = `${egoConfig.hBins} × ${egoConfig.vBins} = ${egoConfig.hBins * egoConfig.vBins}`;
 }
 
 window.setActiveMode = setActiveMode;
 window.resizeFloorForMode = resizeFloorForMode;
 window.updateTensorShapeDisplay = updateTensorShapeDisplay;
 window.setupEgoUI = setupEgoUI;
+window.updateVBinsFromHBins = updateVBinsFromHBins;

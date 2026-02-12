@@ -13,6 +13,14 @@ const egoConfig = {
   scalingMode: "minmax",
 };
 
+function calculateVBins(hBins) {
+  return Math.round((hBins / 3) / 4) * 4;
+}
+
+function updateVBinsFromHBins() {
+  egoConfig.vBins = calculateVBins(egoConfig.hBins);
+}
+
 let egoTensorData = null;
 let egoRayHelper = null;
 let egoAgentMarker = null;
@@ -29,3 +37,5 @@ let lastEgoUpdate = 0;
 const EGO_UPDATE_INTERVAL = 50;
 
 window.egoConfig = egoConfig;
+window.calculateVBins = calculateVBins;
+window.updateVBinsFromHBins = updateVBinsFromHBins;
