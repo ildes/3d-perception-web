@@ -41,7 +41,9 @@ python3 -m http.server 8080
 ### Ego-Centric Mode
 - First-person perception from agent height (1.0m)
 - Output: `[V_BINS × H_BINS]` tensor of normalized distances
-- **Default**: 96×32 bins, 10m range, histogram equalization
+- **Default**: 64×21 bins, 10m range, min-max scaling
+- V-bins auto-calculated from h-bins: `round(hBins/3/4) * 4`
+- H-bins configurable: 4-128 (default 64, step 4)
 - Horizontal FOV: Configurable 0°-360° (default 360° full sphere)
 - Vertical FOV: Separate up (+30°) and down (-60°) angle controls
 - Data Scaling: None, Normalize, Histogram Equalization, Min-Max

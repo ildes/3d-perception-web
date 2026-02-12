@@ -49,6 +49,8 @@ grid/
 - Spherical raycasting from agent's perspective at `agentHeight` (1.0m)
 - Output: `[V_BINS × H_BINS]` tensor of normalized distances (0=close, 1=far/max range)
 - **Default config**: 64×21 bins, 10m range, 1.0 brightness, min-max scaling
+- V-bins auto-calculated from h-bins: `round(hBins/3/4) * 4` (nearest divisible by 4)
+- H-bins configurable: 4-128 (default 64, step 4)
 - Vertical FOV: Separate sliders for up (+30°) and down (-60°) angles
 - Horizontal FOV: Slider 0°-360° (360°=full sphere, 180°=forward hemisphere)
 - Data Scaling: None (raw), Normalize (0-1), Histogram Equalization, Min-Max (default)
@@ -101,8 +103,8 @@ createCorridor(material)        // Long hallway with obstacles
 ### ego-config.js - Configuration
 ```javascript
 egoConfig = {
-    hBins: 64,              // Horizontal bins (8-128)
-    vBins: 21,              // Vertical bins (4-64)
+    hBins: 64,              // Horizontal bins (4-128, step 4)
+    vBins: 21,              // Auto-calculated from hBins
     maxRange: 10,           // Max raycast distance (1-20m, integer)
     vAngleMin: -60,         // Look down angle
     vAngleMax: 30,          // Look up angle
@@ -112,6 +114,9 @@ egoConfig = {
     brightnessMultiplier: 1.0,
     scalingMode: 'minmax'   // 'none' | 'normalize' | 'equalize' | 'minmax'
 };
+
+calculateVBins(hBins)           // Returns nearest divisible by 4 to hBins/3
+updateVBinsFromHBins()          // Updates egoConfig.vBins from hBins
 ```
 
 ### ego-core.js - Sensor Loop
